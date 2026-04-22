@@ -41,9 +41,14 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun TerminePlanerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    primaryColor: Color = Blue,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = if (darkTheme) {
+        DarkColorScheme.copy(primary = primaryColor)
+    } else {
+        LightColorScheme.copy(primary = primaryColor)
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {

@@ -7,14 +7,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.terminplaner.data.preferences.ThemePreferences
 import com.terminplaner.domain.model.Appointment
 import com.terminplaner.domain.model.Category
 import com.terminplaner.domain.repository.AppointmentRepository
 import com.terminplaner.domain.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -30,17 +33,31 @@ data class ExportData(
 data class SettingsUiState(
     val exportSuccess: Boolean = false,
     val importSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val selectedThemeColor: Long = 0xFF2196F3
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val appointmentRepository: AppointmentRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val themePreferences: ThemePreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    val themeColor = themePreferences.themeColor.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0xFF2196F3
+    )
+
+    fun setThemeColor(color: Long) {
+        viewModelScope.launch {
+            themePreferences.setThemeColor(color)
+        }
+    }
 
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 

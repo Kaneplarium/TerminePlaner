@@ -16,9 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.ui.navigation.Screen
+import com.terminplaner.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +30,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val themeColor by viewModel.themeColor.collectAsState()
     val context = LocalContext.current
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -112,6 +116,36 @@ fun SettingsScreen(
                     importLauncher.launch("application/json")
                 }
             )
+
+            Divider()
+
+            Text(
+                text = "Designfarbe",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                val colors = listOf(Blue, Yellow, Red, Green, Purple)
+                colors.forEach { color ->
+                    val isSelected = themeColor == color.toArgb().toLong()
+                    Surface(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clickable { viewModel.setThemeColor(color.toArgb().toLong()) },
+                        shape = MaterialTheme.shapes.small,
+                        color = color,
+                        border = if (isSelected) {
+                            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface)
+                        } else null
+                    ) {}
+                }
+            }
 
             if (uiState.exportSuccess) {
                 Snackbar(

@@ -3,11 +3,11 @@ package com.terminplaner.ui.theme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
+val Blue = Color(0xFF2196F3)
 val Red = Color(0xFFE53935)
 val Orange = Color(0xFFFB8C00)
 val Yellow = Color(0xFFFFEB3B)
 val Green = Color(0xFF4CAF50)
-val Blue = Color(0xFF2196F3)
 val Purple = Color(0xFF9C27B0)
 val Pink = Color(0xFFE91E63)
 val Brown = Color(0xFF795548)
@@ -19,5 +19,3 @@ val presetColors = listOf(
 )
 
 fun Color.toArgbInt(): Int = toArgb()
-
-fun Int.toPresetColor(): Color = presetColors.getOrElse(this % presetColors.size) { Blue }

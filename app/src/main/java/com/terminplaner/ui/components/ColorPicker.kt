@@ -35,7 +35,7 @@ fun ColorPicker(
             columns = GridCells.Fixed(5),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(100.dp)
+            modifier = Modifier.heightIn(max = 100.dp)
         ) {
             items(presetColors) { color ->
                 val isSelected = color.toArgbInt() == selectedColor

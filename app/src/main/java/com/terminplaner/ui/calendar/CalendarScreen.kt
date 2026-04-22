@@ -8,14 +8,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.domain.model.Appointment
 import com.terminplaner.ui.components.AppointmentCard
@@ -25,10 +29,12 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(navController: NavController) {
-    var currentMonth by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var selectedDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
-
+fun CalendarScreen(
+    navController: NavController,
+    viewModel: CalendarViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    
     val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.GERMAN)
     val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
 
@@ -42,7 +48,7 @@ fun CalendarScreen(navController: NavController) {
             FloatingActionButton(
                 onClick = {
                     navController.navigate(
-                        Screen.AppointmentEdit.createRoute(selectedDate = selectedDate)
+                        Screen.AppointmentEdit.createRoute(selectedDate = uiState.selectedDate)
                     )
                 }
             ) {
@@ -56,39 +62,44 @@ fun CalendarScreen(navController: NavController) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = monthFormat.format(Date(currentMonth)),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { viewModel.previousMonth() }) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Vorheriger Monat")
+                }
+                Text(
+                    text = monthFormat.format(Date(uiState.currentMonth)),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                IconButton(onClick = { viewModel.nextMonth() }) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Nächster Monat")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             CalendarGrid(
-                currentMonth = currentMonth,
-                selectedDate = selectedDate,
-            ) { date ->
-                selectedDate = date
-            }
+                currentMonth = uiState.currentMonth,
+                selectedDate = uiState.selectedDate,
+                allAppointments = uiState.allAppointments,
+                onDateSelected = { date ->
+                    viewModel.selectDate(date)
+                }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Termine am ${dateFormat.format(Date(selectedDate))}",
+                text = "Termine am ${dateFormat.format(Date(uiState.selectedDate))}",
                 style = MaterialTheme.typography.titleMedium
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val appointmentsForDate = remember(selectedDate) {
-                getAppointmentsForMonthYear(currentMonth).filter { appointment ->
-                    val aptCal = Calendar.getInstance().apply { timeInMillis = appointment.dateTime }
-                    val selCal = Calendar.getInstance().apply { timeInMillis = selectedDate }
-                    (aptCal[Calendar.YEAR] == selCal[Calendar.YEAR] &&
-                            aptCal[Calendar.MONTH] == selCal[Calendar.MONTH] &&
-                            aptCal[Calendar.DAY_OF_MONTH] == selCal[Calendar.DAY_OF_MONTH])
-                }
-            }
-
-            if (appointmentsForDate.isEmpty()) {
+            if (uiState.appointments.isEmpty()) {
                 Text(
                     text = "Keine Termine für diesen Tag",
                     style = MaterialTheme.typography.bodyMedium,
@@ -98,16 +109,19 @@ fun CalendarScreen(navController: NavController) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(appointmentsForDate) { appointment ->
+                    items(uiState.appointments) { appointment ->
+                        val category = uiState.categories.find { it.id == appointment.categoryId }
                         AppointmentCard(
                             appointment = appointment,
-                            categoryColor = null,
+                            categoryColor = category?.let { Color(it.color) },
                             onClick = {
                                 navController.navigate(
                                     Screen.AppointmentEdit.createRoute(appointmentId = appointment.id)
                                 )
                             },
-                            onDelete = { }
+                            onDelete = {
+                                viewModel.deleteAppointment(appointment.id)
+                            }
                         )
                     }
                 }
@@ -120,16 +134,18 @@ fun CalendarScreen(navController: NavController) {
 fun CalendarGrid(
     currentMonth: Long,
     selectedDate: Long,
+    allAppointments: List<Appointment>,
     onDateSelected: (Long) -> Unit
 ) {
     val calendar = Calendar.getInstance().apply { timeInMillis = currentMonth }
-    val selectedCal = Calendar.getInstance().apply { timeInMillis = selectedDate }
 
     val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-    val firstDayOfWeek = Calendar.getInstance().apply {
+    val firstDayOfMonth = Calendar.getInstance().apply {
         timeInMillis = currentMonth
         set(Calendar.DAY_OF_MONTH, 1)
-    }.get(Calendar.DAY_OF_WEEK)
+    }
+    
+    val firstDayOfWeek = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) + 5) % 7
 
     val dayNames = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
 
@@ -147,20 +163,31 @@ fun CalendarGrid(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        val rows = (daysInMonth + firstDayOfWeek - 2) / 7 + 1
+        val totalSlots = daysInMonth + firstDayOfWeek
+        val rows = (totalSlots + 6) / 7
 
         for (row in 0 until rows) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0..6) {
-                    val dayIndex = row * 7 + col - firstDayOfWeek + 2
+                    val dayIndex = row * 7 + col - firstDayOfWeek + 1
                     if (dayIndex in 1..daysInMonth) {
                         val dateCal = Calendar.getInstance().apply {
                             timeInMillis = currentMonth
                             set(Calendar.DAY_OF_MONTH, dayIndex)
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
                         }
-                        val isSelected = (selectedCal[Calendar.YEAR] == dateCal[Calendar.YEAR] &&
-                                selectedCal[Calendar.MONTH] == dateCal[Calendar.MONTH] &&
-                                selectedCal[Calendar.DAY_OF_MONTH] == dateCal[Calendar.DAY_OF_MONTH])
+                        val dateStart = dateCal.timeInMillis
+                        dateCal.add(Calendar.DAY_OF_MONTH, 1)
+                        val dateEnd = dateCal.timeInMillis
+
+                        val hasAppointments = allAppointments.any { 
+                            it.dateTime >= dateStart && it.dateTime < dateEnd 
+                        }
+
+                        val isDateSelected = selectedDate >= dateStart && selectedDate < dateEnd
 
                         Box(
                             modifier = Modifier
@@ -168,17 +195,33 @@ fun CalendarGrid(
                                 .aspectRatio(1f)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    if (isDateSelected) MaterialTheme.colorScheme.primary
                                     else Color.Transparent
                                 )
-                                .clickable { onDateSelected(dateCal.timeInMillis) },
+                                .clickable { onDateSelected(dateStart) },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = dayIndex.toString(),
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                        else MaterialTheme.colorScheme.onSurface
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = dayIndex.toString(),
+                                    color = if (isDateSelected) MaterialTheme.colorScheme.onPrimary
+                                            else MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = if (isDateSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                                if (hasAppointments) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isDateSelected) MaterialTheme.colorScheme.onPrimary
+                                                else MaterialTheme.colorScheme.primary
+                                            )
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.size(4.dp))
+                                }
+                            }
                         }
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -187,8 +230,4 @@ fun CalendarGrid(
             }
         }
     }
-}
-
-fun getAppointmentsForMonthYear(timestamp: Long): List<Appointment> {
-    return emptyList()
 }
