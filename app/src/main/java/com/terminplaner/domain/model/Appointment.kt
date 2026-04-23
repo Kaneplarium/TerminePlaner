@@ -5,6 +5,7 @@ data class Appointment(
     val title: String,
     val description: String? = null,
     val dateTime: Long,
+    val endDateTime: Long,
     val categoryId: Long? = null,
     val color: Int? = null,
     val isDeleted: Boolean = false,

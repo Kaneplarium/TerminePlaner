@@ -7,6 +7,7 @@ import com.terminplaner.domain.model.Appointment
 import com.terminplaner.domain.model.Category
 import com.terminplaner.domain.repository.AppointmentRepository
 import com.terminplaner.domain.repository.CategoryRepository
+import com.terminplaner.util.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -18,6 +19,7 @@ data class AppointmentEditUiState(
     val title: String = "",
     val description: String = "",
     val dateTime: Long = System.currentTimeMillis(),
+    val endDateTime: Long = System.currentTimeMillis() + 3600000, // + 1 hour
     val categoryId: Long? = null,
     val color: Int? = null,
     val categories: List<Category> = emptyList(),
@@ -30,6 +32,7 @@ data class AppointmentEditUiState(
 class AppointmentEditViewModel @Inject constructor(
     private val appointmentRepository: AppointmentRepository,
     private val categoryRepository: CategoryRepository,
+    private val alarmScheduler: AlarmScheduler,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -55,6 +58,7 @@ class AppointmentEditViewModel @Inject constructor(
                             title = appointment.title,
                             description = appointment.description ?: "",
                             dateTime = appointment.dateTime,
+                            endDateTime = appointment.endDateTime,
                             categoryId = appointment.categoryId,
                             color = appointment.color
                         )
@@ -66,7 +70,16 @@ class AppointmentEditViewModel @Inject constructor(
                     set(Calendar.HOUR_OF_DAY, 9)
                     set(Calendar.MINUTE, 0)
                 }
-                _uiState.update { it.copy(dateTime = calendar.timeInMillis) }
+                val endCalendar = Calendar.getInstance().apply {
+                    timeInMillis = calendar.timeInMillis
+                    add(Calendar.HOUR_OF_DAY, 1)
+                }
+                _uiState.update { 
+                    it.copy(
+                        dateTime = calendar.timeInMillis,
+                        endDateTime = endCalendar.timeInMillis
+                    ) 
+                }
             }
         }
     }
@@ -80,7 +93,12 @@ class AppointmentEditViewModel @Inject constructor(
     }
 
     fun updateDateTime(dateTime: Long) {
-        _uiState.update { it.copy(dateTime = dateTime) }
+        val duration = _uiState.value.endDateTime - _uiState.value.dateTime
+        _uiState.update { it.copy(dateTime = dateTime, endDateTime = dateTime + duration) }
+    }
+
+    fun updateEndDateTime(endDateTime: Long) {
+        _uiState.update { it.copy(endDateTime = endDateTime) }
     }
 
     fun updateCategory(categoryId: Long?) {
@@ -104,15 +122,21 @@ class AppointmentEditViewModel @Inject constructor(
                 title = state.title,
                 description = state.description.ifBlank { null },
                 dateTime = state.dateTime,
+                endDateTime = state.endDateTime,
                 categoryId = state.categoryId,
                 color = state.color
             )
 
-            if (state.isEditMode) {
+            val id = if (state.isEditMode) {
                 appointmentRepository.updateAppointment(appointment)
+                state.id
             } else {
                 appointmentRepository.insertAppointment(appointment)
             }
+            
+            val finalAppointment = appointment.copy(id = id)
+            alarmScheduler.schedule(finalAppointment)
+
             _uiState.update { it.copy(isSaved = true) }
         }
     }

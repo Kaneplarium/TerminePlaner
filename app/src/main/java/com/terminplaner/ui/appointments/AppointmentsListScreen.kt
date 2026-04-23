@@ -83,7 +83,7 @@ fun AppointmentsListScreen(
                         AppointmentCard(
                             appointment = appointment,
                             categoryColor = category?.let { androidx.compose.ui.graphics.Color(it.color) },
-                            onClick = {
+                            onEdit = {
                                 navController.navigate(
                                     Screen.AppointmentEdit.createRoute(appointmentId = appointment.id)
                                 )

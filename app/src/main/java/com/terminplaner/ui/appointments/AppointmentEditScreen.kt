@@ -8,11 +8,13 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.ui.components.ColorPicker
 import com.terminplaner.ui.navigation.Screen
+import com.terminplaner.util.EmailHelper
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -23,11 +25,13 @@ fun AppointmentEditScreen(
     viewModel: AppointmentEditViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) {
@@ -95,12 +99,25 @@ fun AppointmentEditScreen(
                 OutlinedTextField(
                     value = timeFormat.format(Date(uiState.dateTime)),
                     onValueChange = { },
-                    label = { Text("Uhrzeit") },
+                    label = { Text("Startzeit") },
                     modifier = Modifier.weight(1f),
                     readOnly = true,
                     trailingIcon = {
                         IconButton(onClick = { showTimePicker = true }) {
-                            Icon(Icons.Default.Schedule, contentDescription = "Uhrzeit wählen")
+                            Icon(Icons.Default.Schedule, contentDescription = "Startzeit wählen")
+                        }
+                    }
+                )
+
+                OutlinedTextField(
+                    value = timeFormat.format(Date(uiState.endDateTime)),
+                    onValueChange = { },
+                    label = { Text("Endzeit") },
+                    modifier = Modifier.weight(1f),
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showEndTimePicker = true }) {
+                            Icon(Icons.Default.Schedule, contentDescription = "Endzeit wählen")
                         }
                     }
                 )
@@ -152,6 +169,25 @@ fun AppointmentEditScreen(
                 selectedColor = uiState.color ?: 0xFF2196F3.toInt(),
                 onColorSelected = { viewModel.updateColor(it) }
             )
+
+            Text("Benachrichtigungen", style = MaterialTheme.typography.titleMedium)
+            
+            OutlinedButton(
+                onClick = {
+                    val appointment = com.terminplaner.domain.model.Appointment(
+                        title = uiState.title,
+                        description = uiState.description,
+                        dateTime = uiState.dateTime,
+                        endDateTime = uiState.endDateTime
+                    )
+                    EmailHelper.sendAppointmentEmail(context, appointment)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Schedule, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Per E-Mail erinnern")
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -233,6 +269,39 @@ fun AppointmentEditScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
+                    Text("Abbrechen")
+                }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
+    }
+
+    if (showEndTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = Calendar.getInstance().apply { timeInMillis = uiState.endDateTime }
+                .get(Calendar.HOUR_OF_DAY),
+            initialMinute = Calendar.getInstance().apply { timeInMillis = uiState.endDateTime }
+                .get(Calendar.MINUTE)
+        )
+        AlertDialog(
+            onDismissRequest = { showEndTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val calendar = Calendar.getInstance().apply {
+                        timeInMillis = uiState.endDateTime
+                        set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        set(Calendar.MINUTE, timePickerState.minute)
+                    }
+                    viewModel.updateEndDateTime(calendar.timeInMillis)
+                    showEndTimePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndTimePicker = false }) {
                     Text("Abbrechen")
                 }
             },

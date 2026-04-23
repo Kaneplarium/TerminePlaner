@@ -9,7 +9,7 @@ import com.terminplaner.data.local.entity.CategoryEntity
 
 @Database(
     entities = [AppointmentEntity::class, CategoryEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class TerminPlanerDatabase : RoomDatabase() {

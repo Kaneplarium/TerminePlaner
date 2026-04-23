@@ -9,6 +9,7 @@ import com.terminplaner.data.repository.AppointmentRepositoryImpl
 import com.terminplaner.data.repository.CategoryRepositoryImpl
 import com.terminplaner.domain.repository.AppointmentRepository
 import com.terminplaner.domain.repository.CategoryRepository
+import com.terminplaner.util.AlarmScheduler
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -28,7 +29,8 @@ object DatabaseModule {
             context,
             TerminPlanerDatabase::class.java,
             "terminplaner.db"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -39,6 +41,12 @@ object DatabaseModule {
     @Provides
     fun provideCategoryDao(database: TerminPlanerDatabase): CategoryDao {
         return database.categoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAlarmScheduler(@ApplicationContext context: Context): AlarmScheduler {
+        return AlarmScheduler(context)
     }
 }
 
