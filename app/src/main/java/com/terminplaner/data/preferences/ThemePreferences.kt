@@ -18,7 +18,7 @@ import javax.inject.Singleton
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 @Singleton
-class ThemePreferences @Inject constructor(@ApplicationContext private val context: Context) {
+class ThemePreferences @Inject constructor(@param:ApplicationContext private val context: Context) {
     
     companion object {
         val THEME_COLOR_KEY = longPreferencesKey("theme_color")
@@ -43,10 +43,6 @@ class ThemePreferences @Inject constructor(@ApplicationContext private val conte
 
     val isFirstRun: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[IS_FIRST_RUN_KEY] ?: true
-    }
-
-    val storagePath: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[STORAGE_PATH_KEY]
     }
 
     val dynamicColor: Flow<Boolean> = context.dataStore.data.map { preferences ->

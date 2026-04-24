@@ -1,6 +1,5 @@
 package com.terminplaner.ui.settings
 
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -143,11 +142,13 @@ fun SettingsScreen(
             ListItem(
                 headlineContent = { Text("Dunkles Design") },
                 supportingContent = { 
-                    Text(when(darkThemeMode) {
-                        ThemePreferences.MODE_LIGHT -> "Hell"
-                        ThemePreferences.MODE_DARK -> "Dunkel"
-                        else -> "System-Standard"
-                    })
+                    Text(
+                        when(darkThemeMode) {
+                            ThemePreferences.MODE_LIGHT -> "Hell"
+                            ThemePreferences.MODE_DARK -> "Dunkel"
+                            else -> "System-Standard"
+                        }
+                    )
                 },
                 leadingContent = { Icon(Icons.Default.DarkMode, contentDescription = null) },
                 trailingContent = {

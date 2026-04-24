@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +26,7 @@ import com.terminplaner.ui.theme.*
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
-    viewModel: OnboardingViewModel = hiltViewModel()
+    viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     var step by remember { mutableIntStateOf(0) }
     val totalSteps = 6
@@ -50,11 +51,10 @@ fun OnboardingScreen(
                 ) { targetStep ->
                     when (targetStep) {
                         0 -> WelcomeStep()
-                        1 -> NameStep(onNameChange = { viewModel.setUserName(it) })
+                        1 -> NameStep { viewModel.setUserName(it) }
                         2 -> FeaturesStep()
                         3 -> ColorStep(
-                            onColorSelect = { viewModel.setThemeColor(it) },
-                            onDynamicToggle = { viewModel.setDynamicColor(it) }
+                            onColorSelect = { viewModel.setThemeColor(it) }
                         )
                         4 -> StorageStep(onPathSelect = { viewModel.setStoragePath(it) })
                         5 -> PermissionStep()
@@ -83,7 +83,7 @@ fun OnboardingScreen(
 
                 Button(
                     onClick = {
-                        if (step < totalSteps - 1) {
+                        if (step < (totalSteps - 1)) {
                             step++
                         } else {
                             viewModel.completeOnboarding()
@@ -94,7 +94,7 @@ fun OnboardingScreen(
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     if (step < totalSteps - 1) {
-                        Icon(Icons.Default.ArrowForward, contentDescription = "Weiter")
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Weiter")
                     } else {
                         Text("Loslegen")
                         Spacer(Modifier.width(8.dp))
@@ -221,9 +221,8 @@ fun FeatureItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: St
 }
 
 @Composable
-fun ColorStep(onColorSelect: (Long) -> Unit, onDynamicToggle: (Boolean) -> Unit) {
+fun ColorStep(onColorSelect: (Long) -> Unit) {
     var selectedColor by remember { mutableLongStateOf(0xFFE53935) } // Default Red
-    var dynamicEnabled by remember { mutableStateOf(true) } // Default true and hidden
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(

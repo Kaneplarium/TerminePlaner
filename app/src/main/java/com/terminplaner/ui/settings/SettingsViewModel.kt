@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.terminplaner.data.preferences.ThemePreferences
-import com.terminplaner.domain.model.Appointment
 import com.terminplaner.domain.model.Category
 import com.terminplaner.domain.model.ExportData
 import com.terminplaner.domain.repository.AppointmentRepository
@@ -31,7 +30,7 @@ data class SettingsUiState(
     val selectedThemeColor: Long = 0xFFE53935,
     val storagePath: String? = null,
     val dynamicColor: Boolean = true,
-    val userName: String? = null
+    val userName: String? = null,
 )
 
 @HiltViewModel
@@ -83,12 +82,6 @@ class SettingsViewModel @Inject constructor(
     fun setDarkMode(mode: Int) {
         viewModelScope.launch {
             themePreferences.setDarkMode(mode)
-        }
-    }
-
-    fun setDynamicColor(enabled: Boolean) {
-        viewModelScope.launch {
-            themePreferences.setDynamicColor(enabled)
         }
     }
 
