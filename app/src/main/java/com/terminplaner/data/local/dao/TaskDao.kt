@@ -24,6 +24,12 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun deleteTask(id: Long)
 
+    @Query("DELETE FROM tasks WHERE appointmentId = :appointmentId")
+    suspend fun deleteTasksByAppointmentId(appointmentId: Long)
+
+    @Query("DELETE FROM tasks WHERE appointmentId IN (SELECT id FROM appointments WHERE isDeleted = 1)")
+    suspend fun deleteTasksForDeletedAppointments()
+
     @Query("UPDATE tasks SET isCompleted = :isCompleted, updatedAt = :updatedAt WHERE id = :id")
     suspend fun toggleTaskCompletion(id: Long, isCompleted: Boolean, updatedAt: Long = System.currentTimeMillis())
 }

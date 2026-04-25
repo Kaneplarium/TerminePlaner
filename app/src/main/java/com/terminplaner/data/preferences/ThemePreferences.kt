@@ -23,10 +23,12 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
     companion object {
         val THEME_COLOR_KEY = longPreferencesKey("theme_color")
         val DARK_MODE_KEY = intPreferencesKey("dark_mode")
-        val IS_FIRST_RUN_KEY = booleanPreferencesKey("is_first_run")
-        val STORAGE_PATH_KEY = stringPreferencesKey("storage_path")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
         val USER_NAME_KEY = stringPreferencesKey("user_name")
+        val STORAGE_PATH_KEY = stringPreferencesKey("storage_path")
+        val FIRST_RUN_COMPLETED_KEY = booleanPreferencesKey("first_run_completed")
+        val TRASH_AUTO_DELETE_DAYS_KEY = intPreferencesKey("trash_auto_delete_days")
+        val DELETE_LINKED_TASKS_KEY = booleanPreferencesKey("delete_linked_tasks")
         private const val DEFAULT_COLOR = 0xFFE53935 // Red
         const val MODE_SYSTEM = 0
         const val MODE_LIGHT = 1
@@ -41,16 +43,28 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
         preferences[DARK_MODE_KEY] ?: MODE_SYSTEM
     }
 
-    val isFirstRun: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[IS_FIRST_RUN_KEY] ?: true
-    }
-
     val dynamicColor: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[DYNAMIC_COLOR_KEY] ?: true
     }
 
     val userName: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[USER_NAME_KEY]
+    }
+
+    val storagePath: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[STORAGE_PATH_KEY]
+    }
+
+    val isFirstRunCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[FIRST_RUN_COMPLETED_KEY] ?: false
+    }
+
+    val trashAutoDeleteDays: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[TRASH_AUTO_DELETE_DAYS_KEY] ?: 30
+    }
+
+    val deleteLinkedTasks: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[DELETE_LINKED_TASKS_KEY] ?: true
     }
 
     suspend fun setThemeColor(color: Long) {
@@ -62,28 +76,6 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
     suspend fun setDarkMode(mode: Int) {
         context.dataStore.edit { preferences ->
             preferences[DARK_MODE_KEY] = mode
-        }
-    }
-
-    suspend fun setFirstRunCompleted() {
-        context.dataStore.edit { preferences ->
-            preferences[IS_FIRST_RUN_KEY] = false
-        }
-    }
-
-    suspend fun resetFirstRun() {
-        context.dataStore.edit { preferences ->
-            preferences[IS_FIRST_RUN_KEY] = true
-        }
-    }
-
-    suspend fun setStoragePath(path: String?) {
-        context.dataStore.edit { preferences ->
-            if (path == null) {
-                preferences.remove(STORAGE_PATH_KEY)
-            } else {
-                preferences[STORAGE_PATH_KEY] = path
-            }
         }
     }
 
@@ -100,6 +92,34 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
             } else {
                 preferences[USER_NAME_KEY] = name
             }
+        }
+    }
+
+    suspend fun setStoragePath(path: String?) {
+        context.dataStore.edit { preferences ->
+            if (path == null) {
+                preferences.remove(STORAGE_PATH_KEY)
+            } else {
+                preferences[STORAGE_PATH_KEY] = path
+            }
+        }
+    }
+
+    suspend fun setTrashAutoDeleteDays(days: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[TRASH_AUTO_DELETE_DAYS_KEY] = days
+        }
+    }
+
+    suspend fun setDeleteLinkedTasks(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DELETE_LINKED_TASKS_KEY] = enabled
+        }
+    }
+
+    suspend fun setFirstRunCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[FIRST_RUN_COMPLETED_KEY] = true
         }
     }
 }

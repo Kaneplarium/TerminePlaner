@@ -4,12 +4,37 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.terminplaner.domain.model.Appointment
 import com.terminplaner.domain.model.Task
 
 class AlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    private fun canScheduleExactAlarms(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
+    }
+
+    private fun setAlarm(time: Long, pendingIntent: PendingIntent) {
+        if (canScheduleExactAlarms()) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                time,
+                pendingIntent
+            )
+        } else {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                time,
+                pendingIntent
+            )
+        }
+    }
 
     fun schedule(appointment: Appointment) {
         if (appointment.isCompleted || appointment.isDeleted) {
@@ -33,11 +58,7 @@ class AlarmScheduler(private val context: Context) {
         )
 
         if (appointment.dateTime > System.currentTimeMillis()) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                appointment.dateTime,
-                pendingIntent
-            )
+            setAlarm(appointment.dateTime, pendingIntent)
         }
 
         // Schedule Focus Mode (DND)
@@ -62,11 +83,7 @@ class AlarmScheduler(private val context: Context) {
         )
 
         if (appointment.dateTime > System.currentTimeMillis()) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                appointment.dateTime,
-                startPendingIntent
-            )
+            setAlarm(appointment.dateTime, startPendingIntent)
         }
 
         // End DND
@@ -82,11 +99,7 @@ class AlarmScheduler(private val context: Context) {
         )
 
         if (appointment.endDateTime > System.currentTimeMillis()) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                appointment.endDateTime,
-                endPendingIntent
-            )
+            setAlarm(appointment.endDateTime, endPendingIntent)
         }
     }
 
@@ -122,11 +135,7 @@ class AlarmScheduler(private val context: Context) {
         )
 
         if (time > System.currentTimeMillis()) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                time,
-                pendingIntent
-            )
+            setAlarm(time, pendingIntent)
         }
     }
 

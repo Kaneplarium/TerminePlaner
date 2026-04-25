@@ -58,6 +58,12 @@ class CalendarViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val days = themePreferences.trashAutoDeleteDays.first()
+            val threshold = System.currentTimeMillis() - (days * 24L * 60 * 60 * 1000)
+            appointmentRepository.deleteOldTrash(threshold)
+        }
+
+        viewModelScope.launch {
             combine(
                 listOf(
                     _selectedDate,
@@ -169,7 +175,8 @@ class CalendarViewModel @Inject constructor(
 
     fun deleteAppointment(id: Long) {
         viewModelScope.launch {
-            appointmentRepository.softDeleteAppointment(id)
+            val deleteTasks = themePreferences.deleteLinkedTasks.first()
+            appointmentRepository.softDeleteAppointment(id, deleteTasks)
             dataExportManager.autoExport()
         }
     }

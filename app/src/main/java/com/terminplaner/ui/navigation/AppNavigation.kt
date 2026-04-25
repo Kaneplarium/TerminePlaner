@@ -119,6 +119,9 @@ fun AppNavigation(
             composable("categories_list") {
                 CategoriesListScreen(navController = navController)
             }
+            composable("features") {
+                com.terminplaner.ui.settings.FeaturesScreen(navController = navController)
+            }
             composable(
                 route = "category_edit?categoryId={categoryId}",
                 arguments = listOf(

@@ -1,5 +1,7 @@
 package com.terminplaner.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -56,14 +58,6 @@ fun SettingsScreen(
         }
     }
 
-    val storageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let {
-            viewModel.updateStoragePath(it.toString())
-        }
-    }
-
     Scaffold(
         topBar = {
             AppTopBar(
@@ -87,12 +81,28 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
+            Text(
+                text = "Papierkorb",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+
             ListItem(
                 headlineContent = { Text("Papierkorb") },
-                supportingContent = { Text("Gelöschte Termine anzeigen") },
+                supportingContent = { Text("Gelöschte Termine & Einstellungen") },
                 leadingContent = { Icon(Icons.Default.Delete, contentDescription = null) },
                 trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
                 modifier = Modifier.clickable { navController.navigate(Screen.Trash.route) }
+            )
+
+            HorizontalDivider()
+
+            Text(
+                text = "App-Verwaltung & Daten",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.primary
             )
 
             ListItem(
@@ -103,7 +113,13 @@ fun SettingsScreen(
                 modifier = Modifier.clickable { navController.navigate(Screen.CategoriesList.route) }
             )
 
-            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text("Funktionsübersicht") },
+                supportingContent = { Text("Alle Features im Überblick") },
+                leadingContent = { Icon(Icons.Default.List, contentDescription = null) },
+                trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                modifier = Modifier.clickable { navController.navigate(Screen.Features.route) }
+            )
 
             ListItem(
                 headlineContent = { Text("Daten exportieren") },
@@ -119,25 +135,27 @@ fun SettingsScreen(
                 modifier = Modifier.clickable { importLauncher.launch("application/json") }
             )
 
-            ListItem(
-                headlineContent = { Text("Speicherort wählen") },
-                supportingContent = { Text(uiState.storagePath ?: "Standard-Pfad festlegen") },
-                leadingContent = { Icon(Icons.Default.Storage, contentDescription = null) },
-                modifier = Modifier.clickable { storageLauncher.launch(null) }
-            )
-
             HorizontalDivider()
 
+            Text(
+                text = "Support & Design",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+
             ListItem(
-                headlineContent = { Text("Einrichtungsassistent") },
-                supportingContent = { Text("Ersteinrichtung erneut starten") },
-                leadingContent = { Icon(Icons.Default.RestartAlt, contentDescription = null) },
-                modifier = Modifier.clickable { 
-                    viewModel.restartOnboarding()
+                headlineContent = { Text("Entwickler kontaktieren") },
+                supportingContent = { Text("Feedback oder Fragen senden") },
+                leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
+                modifier = Modifier.clickable {
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:kontakt@kaneplarium.com")
+                        putExtra(Intent.EXTRA_SUBJECT, "TerminePlaner Feedback")
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Email senden"))
                 }
             )
-
-            HorizontalDivider()
 
             ListItem(
                 headlineContent = { Text("Dunkles Design") },

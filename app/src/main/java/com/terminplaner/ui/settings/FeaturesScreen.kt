@@ -1,0 +1,101 @@
+package com.terminplaner.ui.settings
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.terminplaner.ui.components.AppTopBar
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FeaturesScreen(navController: NavController) {
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "Funktionsübersicht",
+                navController = navController
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "Was bietet TerminePlaner?",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            FeatureItem(
+                icon = Icons.Default.CheckCircle,
+                title = "Intelligente Planung",
+                description = "Erkenne Terminüberschneidungen automatisch und plane deinen Tag effizient."
+            )
+            FeatureItem(
+                icon = Icons.Default.Notifications,
+                title = "Genaue Erinnerungen",
+                description = "Verpasse nie wieder einen Termin mit präzisen Benachrichtigungen für deine Aufgaben."
+            )
+            FeatureItem(
+                icon = Icons.Default.Security,
+                title = "Datenschutz & Backups",
+                description = "Deine Daten sind sicher. Nutze die automatische Sicherung und Hintergrund-Backups."
+            )
+            FeatureItem(
+                icon = Icons.Default.Code,
+                title = "Open Source",
+                description = "Transparenz ist uns wichtig. Der Quellcode ist offen und für jeden einsehbar."
+            )
+            FeatureItem(
+                icon = Icons.Default.Block,
+                title = "Werbefrei & Kostenlos",
+                description = "Keine versteckten Kosten, keine störende Werbung. 100% Fokus auf deine Termine."
+            )
+        }
+    }
+}
+
+@Composable
+fun FeatureItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}

@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import com.terminplaner.data.preferences.ThemePreferences
 import com.terminplaner.ui.navigation.AppNavigation
-import com.terminplaner.ui.onboarding.OnboardingScreen
 import com.terminplaner.ui.theme.TerminePlanerTheme
 import com.terminplaner.ui.settings.SettingsViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,13 +53,6 @@ class MainActivity : ComponentActivity() {
             val themeColorLong by settingsViewModel.themeColor.collectAsState()
             val darkThemeMode by settingsViewModel.darkThemeMode.collectAsState()
             val dynamicColor by settingsViewModel.dynamicColor.collectAsState()
-            val isFirstRun by settingsViewModel.isFirstRun.collectAsState()
-            
-            var showOnboarding by remember { mutableStateOf(false) }
-            
-            LaunchedEffect(isFirstRun) {
-                showOnboarding = isFirstRun
-            }
             
             val useDarkTheme = when (darkThemeMode) {
                 ThemePreferences.MODE_LIGHT -> false
@@ -77,11 +69,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    if (showOnboarding) {
-                        OnboardingScreen(onFinished = { showOnboarding = false })
-                    } else {
-                        AppNavigation(intentAction = intent.action, intentShortcut = intent.getStringExtra("shortcut"))
-                    }
+                    AppNavigation(intentAction = intent.action, intentShortcut = intent.getStringExtra("shortcut"))
                 }
             }
         }

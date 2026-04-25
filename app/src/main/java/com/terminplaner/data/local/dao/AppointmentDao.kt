@@ -36,6 +36,9 @@ interface AppointmentDao {
     @Query("DELETE FROM appointments WHERE isDeleted = 1")
     suspend fun emptyTrash()
 
+    @Query("DELETE FROM appointments WHERE isDeleted = 1 AND deletedAt < :threshold")
+    suspend fun deleteOldTrash(threshold: Long)
+
     @Query("SELECT * FROM appointments")
     suspend fun getAllAppointmentsForExport(): List<AppointmentEntity>
 

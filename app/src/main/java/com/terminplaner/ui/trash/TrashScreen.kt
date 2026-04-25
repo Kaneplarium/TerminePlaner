@@ -5,11 +5,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoDelete
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,9 +29,12 @@ fun TrashScreen(
     viewModel: TrashViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val trashAutoDeleteDays by viewModel.trashAutoDeleteDays.collectAsState()
+    val deleteLinkedTasks by viewModel.deleteLinkedTasks.collectAsState()
     val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
 
     var showEmptyTrashDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -39,6 +46,9 @@ fun TrashScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showSettingsDialog = true }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Papierkorb Einstellungen")
+                    }
                     if (uiState.deletedAppointments.isNotEmpty()) {
                         IconButton(onClick = { showEmptyTrashDialog = true }) {
                             Icon(
@@ -131,6 +141,79 @@ fun TrashScreen(
             dismissButton = {
                 TextButton(onClick = { showEmptyTrashDialog = false }) {
                     Text("Abbrechen")
+                }
+            }
+        )
+    }
+
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text("Papierkorb Einstellungen") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.AutoDelete, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("Automatisch leeren", style = MaterialTheme.typography.bodyLarge)
+                                Text("Nach $trashAutoDeleteDays Tagen", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        
+                        var expanded by remember { mutableStateOf(false) }
+                        Box {
+                            TextButton(onClick = { expanded = true }) {
+                                Text("$trashAutoDeleteDays Tage")
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                listOf(30, 60, 90).forEach { days ->
+                                    DropdownMenuItem(
+                                        text = { Text("$days Tage") },
+                                        onClick = {
+                                            viewModel.setTrashAutoDeleteDays(days)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.LinkOff, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("Verknüpfte Aufgaben", style = MaterialTheme.typography.bodyLarge)
+                                Text("Ebenfalls löschen", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        Switch(
+                            checked = deleteLinkedTasks,
+                            onCheckedChange = { viewModel.setDeleteLinkedTasks(it) }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettingsDialog = false }) {
+                    Text("Fertig")
                 }
             }
         )

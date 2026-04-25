@@ -28,7 +28,6 @@ data class SettingsUiState(
     val importSuccess: Boolean = false,
     val error: String? = null,
     val selectedThemeColor: Long = 0xFFE53935,
-    val storagePath: String? = null,
     val dynamicColor: Boolean = true,
     val userName: String? = null,
 )
@@ -55,12 +54,6 @@ class SettingsViewModel @Inject constructor(
         initialValue = ThemePreferences.MODE_SYSTEM
     )
 
-    val isFirstRun = themePreferences.isFirstRun.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
-
     val dynamicColor = themePreferences.dynamicColor.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -71,6 +64,18 @@ class SettingsViewModel @Inject constructor(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
+    )
+
+    val trashAutoDeleteDays = themePreferences.trashAutoDeleteDays.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 30
+    )
+
+    val deleteLinkedTasks = themePreferences.deleteLinkedTasks.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
     )
 
     fun setThemeColor(color: Long) {
@@ -85,19 +90,21 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateStoragePath(path: String?) {
-        _uiState.update { it.copy(storagePath = path) }
-    }
-
     fun setUserName(name: String?) {
         viewModelScope.launch {
             themePreferences.setUserName(name)
         }
     }
 
-    fun restartOnboarding() {
+    fun setTrashAutoDeleteDays(days: Int) {
         viewModelScope.launch {
-            themePreferences.resetFirstRun()
+            themePreferences.setTrashAutoDeleteDays(days)
+        }
+    }
+
+    fun setDeleteLinkedTasks(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setDeleteLinkedTasks(enabled)
         }
     }
 

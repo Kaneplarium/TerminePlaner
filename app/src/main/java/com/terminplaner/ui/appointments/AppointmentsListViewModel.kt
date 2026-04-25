@@ -52,7 +52,8 @@ class AppointmentsListViewModel @Inject constructor(
 
     fun deleteAppointment(id: Long) {
         viewModelScope.launch {
-            appointmentRepository.softDeleteAppointment(id)
+            val deleteTasks = themePreferences.deleteLinkedTasks.first()
+            appointmentRepository.softDeleteAppointment(id, deleteTasks)
             dataExportManager.autoExport()
         }
     }

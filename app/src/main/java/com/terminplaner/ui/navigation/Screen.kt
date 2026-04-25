@@ -19,6 +19,7 @@ sealed class Screen(val route: String) {
     }
     data object Trash : Screen("trash")
     data object CategoriesList : Screen("categories_list")
+    data object Features : Screen("features")
     data object CategoryEdit : Screen("category_edit?categoryId={categoryId}") {
         fun createRoute(categoryId: Long? = null): String {
             return "category_edit?categoryId=${categoryId ?: 0}"
