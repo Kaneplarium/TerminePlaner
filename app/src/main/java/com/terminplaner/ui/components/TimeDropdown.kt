@@ -1,8 +1,9 @@
 package com.terminplaner.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,10 +18,16 @@ fun TimeDropdown(
     onTimeSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showPicker by remember { mutableStateOf(false) }
     val calendar = Calendar.getInstance().apply { timeInMillis = currentTime }
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
     val minute = calendar.get(Calendar.MINUTE)
+    
+    val timeState = rememberTimePickerState(
+        initialHour = hour,
+        initialMinute = minute,
+        is24Hour = true
+    )
     
     val timeString = String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
 
@@ -30,47 +37,50 @@ fun TimeDropdown(
             onValueChange = { },
             readOnly = true,
             label = { Text(label) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showPicker = true },
+            enabled = false,
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
             trailingIcon = {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                }
+                Icon(
+                    imageVector = Icons.Default.Settings, 
+                    contentDescription = "Zeit wählen",
+                    modifier = Modifier.clickable { showPicker = true }
+                )
             }
         )
         
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = 300.dp)
-        ) {
-            Text("Zeit auswählen", modifier = Modifier.padding(8.dp), style = MaterialTheme.typography.labelSmall)
-            
-            (0..23).forEach { h ->
-                DropdownMenuItem(
-                    text = { Text(String.format(Locale.getDefault(), "%02d:00", h)) },
-                    onClick = {
+        if (showPicker) {
+            AlertDialog(
+                onDismissRequest = { showPicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
                         val newCal = Calendar.getInstance().apply {
                             timeInMillis = currentTime
-                            set(Calendar.HOUR_OF_DAY, h)
-                            set(Calendar.MINUTE, 0)
+                            set(Calendar.HOUR_OF_DAY, timeState.hour)
+                            set(Calendar.MINUTE, timeState.minute)
                         }
                         onTimeSelected(newCal.timeInMillis)
-                        expanded = false
+                        showPicker = false
+                    }) {
+                        Text("OK")
                     }
-                )
-                DropdownMenuItem(
-                    text = { Text(String.format(Locale.getDefault(), "%02d:30", h)) },
-                    onClick = {
-                        val newCal = Calendar.getInstance().apply {
-                            timeInMillis = currentTime
-                            set(Calendar.HOUR_OF_DAY, h)
-                            set(Calendar.MINUTE, 30)
-                        }
-                        onTimeSelected(newCal.timeInMillis)
-                        expanded = false
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPicker = false }) {
+                        Text("Abbrechen")
                     }
-                )
-            }
+                },
+                text = {
+                    TimePicker(state = timeState)
+                }
+            )
         }
     }
 }

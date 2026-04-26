@@ -292,15 +292,16 @@ fun StorageStep(onPathSelect: (String) -> Unit) {
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            text = "Speicherort",
+            text = "Speicherort & Sicherheit",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Wähle einen Ordner für automatische Backups deiner Daten.",
+            text = "Wähle einen Ordner für automatische Backups deiner Daten. \n\nHinweis: Diese App hat KEINE Cloud-Anbindung. Du bist selbst für die Sicherung deiner Daten verantwortlich!",
             style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.error
         )
         Spacer(Modifier.height(32.dp))
         
@@ -337,9 +338,25 @@ fun PermissionStep() {
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Erlaube Benachrichtigungen, damit du nie wieder einen Termin verpasst.",
+            text = "Erlaube Benachrichtigungen, damit du nie wieder einen Termin verpasst. \n\nZudem benötigen wir Zugriff auf deine Kontakte für eine schnellere Terminerstellung.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
+        
+        Spacer(Modifier.height(24.dp))
+        
+        Surface(
+            color = MaterialTheme.colorScheme.tertiaryContainer,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "WICHTIG: Deine Daten werden nur lokal gespeichert. Wir haben KEINEN Zugriff auf eine Cloud. Sichere deine Backups regelmäßig!",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(16.dp),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        }
     }
 }

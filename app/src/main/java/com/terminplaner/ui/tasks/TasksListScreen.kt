@@ -31,7 +31,7 @@ fun TasksListScreen(
     viewModel: TasksListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
     val scope = rememberCoroutineScope()
     
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -45,7 +45,7 @@ fun TasksListScreen(
         topBar = {
             Column {
                 AppTopBar(
-                    title = if (uiState.userName != null) "Hallo ${uiState.userName}" else "Aufgaben",
+                    areaName = "Aufgaben",
                     navController = navController
                 )
                 TabRow(selectedTabIndex = selectedTab) {

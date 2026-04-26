@@ -7,19 +7,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeaturesScreen(navController: NavController) {
+fun FeaturesScreen(
+    navController: NavController
+) {
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Funktionsübersicht",
+                areaName = "Funktionsübersicht",
                 navController = navController
             )
         }

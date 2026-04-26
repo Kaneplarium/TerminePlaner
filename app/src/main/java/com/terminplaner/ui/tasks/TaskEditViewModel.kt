@@ -3,6 +3,7 @@ package com.terminplaner.ui.tasks
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.terminplaner.data.preferences.ThemePreferences
 import com.terminplaner.domain.model.Appointment
 import com.terminplaner.domain.model.Task
 import com.terminplaner.domain.repository.AppointmentRepository
@@ -23,6 +24,7 @@ data class TaskEditUiState(
     val appointmentId: Long? = null,
     val reminderTime: Long? = null,
     val appointments: List<Appointment> = emptyList(),
+    val userName: String? = null,
     val isEditMode: Boolean = false,
     val isSaved: Boolean = false,
     val titleError: Boolean = false,
@@ -33,6 +35,7 @@ data class TaskEditUiState(
 class TaskEditViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val appointmentRepository: AppointmentRepository,
+    private val themePreferences: ThemePreferences,
     private val alarmScheduler: AlarmScheduler,
     private val dataExportManager: DataExportManager,
     private val mlManager: MLManager,
@@ -52,6 +55,12 @@ class TaskEditViewModel @Inject constructor(
         viewModelScope.launch {
             appointmentRepository.getAllAppointments().collect { appointments ->
                 _uiState.update { it.copy(appointments = appointments) }
+            }
+        }
+
+        viewModelScope.launch {
+            themePreferences.userName.collect { name ->
+                _uiState.update { it.copy(userName = name) }
             }
         }
 

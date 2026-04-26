@@ -47,6 +47,9 @@ fun SettingsScreen(
 
     var showNameDialog by remember { mutableStateOf(false) }
     var nameInput by remember(userName) { mutableStateOf(userName ?: "") }
+    
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var showEasterEgg by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -61,7 +64,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Einstellungen",
+                areaName = "Einstellungen",
                 navController = navController
             )
         }
@@ -82,10 +85,18 @@ fun SettingsScreen(
             HorizontalDivider()
 
             Text(
-                text = "Papierkorb",
+                text = "Hilfe & Papierkorb",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.primary
+            )
+
+            ListItem(
+                headlineContent = { Text("Funktionsübersicht") },
+                supportingContent = { Text("Alle Features im Überblick") },
+                leadingContent = { Icon(Icons.Default.List, contentDescription = null) },
+                trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                modifier = Modifier.clickable { navController.navigate(Screen.Features.route) }
             )
 
             ListItem(
@@ -99,7 +110,7 @@ fun SettingsScreen(
             HorizontalDivider()
 
             Text(
-                text = "App-Verwaltung & Daten",
+                text = "Daten",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.primary
@@ -111,14 +122,6 @@ fun SettingsScreen(
                 leadingContent = { Icon(Icons.Default.Palette, contentDescription = null) },
                 trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
                 modifier = Modifier.clickable { navController.navigate(Screen.CategoriesList.route) }
-            )
-
-            ListItem(
-                headlineContent = { Text("Funktionsübersicht") },
-                supportingContent = { Text("Alle Features im Überblick") },
-                leadingContent = { Icon(Icons.Default.List, contentDescription = null) },
-                trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
-                modifier = Modifier.clickable { navController.navigate(Screen.Features.route) }
             )
 
             ListItem(
@@ -142,19 +145,6 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.primary
-            )
-
-            ListItem(
-                headlineContent = { Text("Entwickler kontaktieren") },
-                supportingContent = { Text("Feedback oder Fragen senden") },
-                leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
-                modifier = Modifier.clickable {
-                    val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = Uri.parse("mailto:kontakt@kaneplarium.com")
-                        putExtra(Intent.EXTRA_SUBJECT, "Terminplaner Feedback")
-                    }
-                    context.startActivity(Intent.createChooser(intent, "Email senden"))
-                }
             )
 
             ListItem(
@@ -255,16 +245,51 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.weight(1f))
+
+            if (showEasterEgg) {
+                Text(
+                    text = "${userName ?: "Detektiv"}, herzlichen Glückwunsch! Du bist ein richtiger Detektiv!",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFFFFD700), // Gold
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
             
-            Text(
-                text = "Version 2026.04.26.00.50",
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Version 2026.04.26.00.50",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable {
+                        versionTapCount++
+                        if (versionTapCount >= 3) {
+                            showEasterEgg = true
+                        }
+                    }
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "Contact",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:kontakt@kaneplarium.com")
+                            putExtra(Intent.EXTRA_SUBJECT, "Terminplaner Feedback")
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Email senden"))
+                    }
+                )
+            }
         }
 
         if (uiState.exportSuccess) {

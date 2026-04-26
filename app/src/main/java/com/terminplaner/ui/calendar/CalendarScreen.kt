@@ -57,7 +57,7 @@ fun CalendarScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = if (uiState.userName != null) "Hallo ${uiState.userName}" else "Kalender",
+                areaName = "Kalender",
                 navController = navController
             )
         }

@@ -38,6 +38,12 @@ class TrashViewModel @Inject constructor(
         initialValue = true
     )
 
+    val userName = themePreferences.userName.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
     init {
         viewModelScope.launch {
             appointmentRepository.getDeletedAppointments().collect { appointments ->

@@ -17,11 +17,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.terminplaner.ui.components.AppTopBar
 import com.terminplaner.ui.components.ColorPicker
 import com.terminplaner.ui.components.TimeDropdown
 import com.terminplaner.util.ExternalCalendarHelper
@@ -85,10 +87,9 @@ fun AppointmentEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(if (uiState.isEditMode) "Termin bearbeiten" else "Neuer Termin")
-                },
+            AppTopBar(
+                areaName = if (uiState.isEditMode) "Termin bearbeiten" else "Neuer Termin",
+                navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
@@ -101,8 +102,7 @@ fun AppointmentEditScreen(
                     IconButton(onClick = { viewModel.onSaveClick() }) {
                         Icon(Icons.Default.Check, contentDescription = "Fertig")
                     }
-                },
-                windowInsets = WindowInsets.statusBars
+                }
             )
         }
     ) { padding ->
@@ -288,17 +288,27 @@ fun AppointmentEditScreen(
                 onColorSelected = { viewModel.updateColor(it) }
             )
 
-            ListItem(
-                headlineContent = { Text("Fokus-Modus") },
-                supportingContent = { Text("Aktiviert automatisch 'Bitte nicht stören'") },
-                leadingContent = { Icon(Icons.Default.DoNotDisturbOn, contentDescription = null) },
-                trailingContent = {
-                    Switch(
-                        checked = uiState.isFocusMode,
-                        onCheckedChange = { viewModel.updateFocusMode(it) }
+            OutlinedButton(
+                onClick = { viewModel.updateFocusMode(!uiState.isFocusMode) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = if (uiState.isFocusMode) {
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f),
+                        contentColor = Color(0xFF2E7D32)
                     )
-                }
-            )
+                } else ButtonDefaults.outlinedButtonColors(),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    if (uiState.isFocusMode) Color(0xFF4CAF50) else MaterialTheme.colorScheme.outline
+                )
+            ) {
+                Icon(
+                    imageVector = if (uiState.isFocusMode) Icons.Default.DoNotDisturbOn else Icons.Default.DoNotDisturbOff,
+                    contentDescription = null
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(if (uiState.isFocusMode) "Fokus-Modus aktiv" else "Fokus-Modus deaktiviert")
+            }
 
             OutlinedButton(
                 onClick = {

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.terminplaner.ui.components.AppTopBar
 import com.terminplaner.ui.navigation.Screen
 import java.util.*
 
@@ -27,8 +28,9 @@ fun CategoriesListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Kategorien") },
+            AppTopBar(
+                areaName = "Kategorien",
+                navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")

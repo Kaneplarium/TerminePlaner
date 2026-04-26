@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.terminplaner.ui.components.AppTopBar
 import com.terminplaner.ui.components.ColorPicker
 import com.terminplaner.ui.navigation.Screen
 import java.util.*
@@ -29,10 +30,9 @@ fun CategoryEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(if (uiState.isEditMode) "Kategorie bearbeiten" else "Neue Kategorie")
-                },
+            AppTopBar(
+                areaName = if (uiState.isEditMode) "Kategorie bearbeiten" else "Neue Kategorie",
+                navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")

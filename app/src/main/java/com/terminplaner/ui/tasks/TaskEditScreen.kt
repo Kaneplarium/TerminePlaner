@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.terminplaner.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,10 +21,9 @@ fun TaskEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(if (uiState.isEditMode) "Aufgabe bearbeiten" else "Neue Aufgabe")
-                },
+            AppTopBar(
+                areaName = if (uiState.isEditMode) "Aufgabe bearbeiten" else "Neue Aufgabe",
+                navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")

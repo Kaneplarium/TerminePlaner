@@ -78,6 +78,12 @@ class SettingsViewModel @Inject constructor(
         initialValue = true
     )
 
+    val isFirstRunCompleted = themePreferences.isFirstRunCompleted.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
     fun setThemeColor(color: Long) {
         viewModelScope.launch {
             themePreferences.setThemeColor(color)

@@ -35,7 +35,7 @@ fun AppointmentsListScreen(
         topBar = {
             Column {
                 AppTopBar(
-                    title = if (uiState.userName != null) "Hallo ${uiState.userName}" else "Termine",
+                    areaName = "Termine",
                     navController = navController
                 )
                 TabRow(selectedTabIndex = selectedTab) {

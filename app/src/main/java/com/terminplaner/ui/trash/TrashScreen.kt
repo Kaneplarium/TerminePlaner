@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.terminplaner.ui.components.AppTopBar
 import com.terminplaner.ui.components.AppointmentCard
 import java.text.SimpleDateFormat
 import java.util.*
@@ -38,8 +39,9 @@ fun TrashScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Papierkorb") },
+            AppTopBar(
+                areaName = "Papierkorb",
+                navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
