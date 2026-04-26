@@ -17,6 +17,7 @@ data class AppointmentsListUiState(
     val appointments: List<Appointment> = emptyList(),
     val categories: List<Category> = emptyList(),
     val userName: String? = null,
+    val isProUser: Boolean = false,
     val isLoading: Boolean = false
 )
 
@@ -36,12 +37,14 @@ class AppointmentsListViewModel @Inject constructor(
             combine(
                 appointmentRepository.getAllAppointments(),
                 categoryRepository.getAllCategories(),
-                themePreferences.userName
-            ) { appointments, categories, userName ->
+                themePreferences.userName,
+                themePreferences.isProUser
+            ) { appointments, categories, userName, isPro ->
                 AppointmentsListUiState(
                     appointments = appointments,
                     categories = categories,
                     userName = userName,
+                    isProUser = isPro,
                     isLoading = false
                 )
             }.collect { state ->

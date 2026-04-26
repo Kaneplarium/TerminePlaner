@@ -25,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.data.preferences.ThemePreferences
 import com.terminplaner.ui.components.AppTopBar
+import com.terminplaner.ui.components.ConfettiOverlay
 import com.terminplaner.ui.navigation.Screen
 import com.terminplaner.ui.theme.*
 import com.terminplaner.util.DndManager
@@ -42,6 +43,7 @@ fun SettingsScreen(
     val darkThemeMode by viewModel.darkThemeMode.collectAsState()
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val userName by viewModel.userName.collectAsState()
+    val isProUser by viewModel.isProUser.collectAsState()
     val context = LocalContext.current
     val dndManager = remember { DndManager(context) }
 
@@ -49,7 +51,8 @@ fun SettingsScreen(
     var nameInput by remember(userName) { mutableStateOf(userName ?: "") }
     
     var versionTapCount by remember { mutableIntStateOf(0) }
-    var showEasterEgg by remember { mutableStateOf(false) }
+    var showConfetti by remember { mutableStateOf(false) }
+    var showGiftDialog by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -65,6 +68,7 @@ fun SettingsScreen(
         topBar = {
             AppTopBar(
                 areaName = "Einstellungen",
+                isPro = isProUser,
                 navController = navController
             )
         }
@@ -246,18 +250,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            if (showEasterEgg) {
-                Text(
-                    text = "${userName ?: "Detektiv"}, herzlichen Glückwunsch! Du bist ein richtiger Detektiv!",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFFFFD700), // Gold
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -272,7 +264,10 @@ fun SettingsScreen(
                     modifier = Modifier.clickable {
                         versionTapCount++
                         if (versionTapCount >= 3) {
-                            showEasterEgg = true
+                            showConfetti = true
+                            showGiftDialog = true
+                            viewModel.setProUser(true)
+                            versionTapCount = 0
                         }
                     }
                 )
@@ -332,5 +327,22 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    if (showGiftDialog) {
+        AlertDialog(
+            onDismissRequest = { showGiftDialog = false },
+            title = { Text("Überraschung!") },
+            text = { Text("Geschenk erhalten: Du hast den PRO-Status freigeschaltet!") },
+            confirmButton = {
+                TextButton(onClick = { showGiftDialog = false }) {
+                    Text("Bestätigen")
+                }
+            }
+        )
+    }
+
+    if (showConfetti) {
+        ConfettiOverlay(onFinished = { showConfetti = false })
     }
 }

@@ -19,12 +19,16 @@ import com.terminplaner.ui.components.AppTopBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeaturesScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val isProUser by viewModel.isProUser.collectAsState()
+
     Scaffold(
         topBar = {
             AppTopBar(
                 areaName = "Funktionsübersicht",
+                isPro = isProUser,
                 navController = navController
             )
         }

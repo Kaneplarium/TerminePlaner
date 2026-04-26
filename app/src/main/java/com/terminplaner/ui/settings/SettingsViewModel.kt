@@ -84,6 +84,18 @@ class SettingsViewModel @Inject constructor(
         initialValue = false
     )
 
+    val isProUser = themePreferences.isProUser.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val isPermissionDialogShown = themePreferences.isPermissionDialogShown.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
     fun setThemeColor(color: Long) {
         viewModelScope.launch {
             themePreferences.setThemeColor(color)
@@ -111,6 +123,18 @@ class SettingsViewModel @Inject constructor(
     fun setDeleteLinkedTasks(enabled: Boolean) {
         viewModelScope.launch {
             themePreferences.setDeleteLinkedTasks(enabled)
+        }
+    }
+
+    fun setProUser(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setProUser(enabled)
+        }
+    }
+
+    fun setPermissionDialogShown(shown: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setPermissionDialogShown(shown)
         }
     }
 

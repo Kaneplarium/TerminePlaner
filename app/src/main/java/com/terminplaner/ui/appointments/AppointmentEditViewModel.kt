@@ -30,6 +30,7 @@ data class AppointmentEditUiState(
     val isFocusMode: Boolean = false,
     val categories: List<Category> = emptyList(),
     val userName: String? = null,
+    val isProUser: Boolean = false,
     val isEditMode: Boolean = false,
     val isSaved: Boolean = false,
     val titleError: Boolean = false,
@@ -67,6 +68,12 @@ class AppointmentEditViewModel @Inject constructor(
         viewModelScope.launch {
             themePreferences.userName.collect { name ->
                 _uiState.update { it.copy(userName = name) }
+            }
+        }
+
+        viewModelScope.launch {
+            themePreferences.isProUser.collect { isPro ->
+                _uiState.update { it.copy(isProUser = isPro) }
             }
         }
 

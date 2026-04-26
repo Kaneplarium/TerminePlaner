@@ -29,6 +29,8 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
         val FIRST_RUN_COMPLETED_KEY = booleanPreferencesKey("first_run_completed")
         val TRASH_AUTO_DELETE_DAYS_KEY = intPreferencesKey("trash_auto_delete_days")
         val DELETE_LINKED_TASKS_KEY = booleanPreferencesKey("delete_linked_tasks")
+        val IS_PRO_USER_KEY = booleanPreferencesKey("is_pro_user")
+        val PERMISSION_DIALOG_SHOWN_KEY = booleanPreferencesKey("permission_dialog_shown")
         private const val DEFAULT_COLOR = 0xFFE53935 // Red
         const val MODE_SYSTEM = 0
         const val MODE_LIGHT = 1
@@ -65,6 +67,14 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
 
     val deleteLinkedTasks: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[DELETE_LINKED_TASKS_KEY] ?: true
+    }
+
+    val isProUser: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[IS_PRO_USER_KEY] ?: false
+    }
+
+    val isPermissionDialogShown: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PERMISSION_DIALOG_SHOWN_KEY] ?: false
     }
 
     suspend fun setThemeColor(color: Long) {
@@ -120,6 +130,18 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
     suspend fun setFirstRunCompleted() {
         context.dataStore.edit { preferences ->
             preferences[FIRST_RUN_COMPLETED_KEY] = true
+        }
+    }
+
+    suspend fun setProUser(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[IS_PRO_USER_KEY] = enabled
+        }
+    }
+
+    suspend fun setPermissionDialogShown(shown: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PERMISSION_DIALOG_SHOWN_KEY] = shown
         }
     }
 }

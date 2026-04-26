@@ -17,6 +17,7 @@ data class TasksListUiState(
     val tasks: List<Task> = emptyList(),
     val appointments: List<Appointment> = emptyList(),
     val userName: String? = null,
+    val isProUser: Boolean = false,
     val isLoading: Boolean = false
 )
 
@@ -36,12 +37,14 @@ class TasksListViewModel @Inject constructor(
             combine(
                 taskRepository.getAllTasks(),
                 appointmentRepository.getAllAppointments(),
-                themePreferences.userName
-            ) { tasks, appointments, userName ->
+                themePreferences.userName,
+                themePreferences.isProUser
+            ) { tasks, appointments, userName, isPro ->
                 TasksListUiState(
                     tasks = tasks,
                     appointments = appointments,
-                    userName = userName
+                    userName = userName,
+                    isProUser = isPro
                 )
             }.collect { newState ->
                 _uiState.value = newState

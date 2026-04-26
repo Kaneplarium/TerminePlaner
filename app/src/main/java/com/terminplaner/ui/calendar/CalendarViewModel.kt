@@ -22,6 +22,7 @@ data class CalendarUiState(
     val categories: List<Category> = emptyList(),
     val selectedCategoryId: Long? = null,
     val userName: String? = null,
+    val isProUser: Boolean = false,
     val isLoading: Boolean = false
 )
 
@@ -71,7 +72,8 @@ class CalendarViewModel @Inject constructor(
                     categoryRepository.getAllCategories(),
                     appointmentRepository.getAllAppointments(),
                     _selectedCategoryId,
-                    themePreferences.userName
+                    themePreferences.userName,
+                    themePreferences.isProUser
                 )
             ) { array ->
                 val date = array[0] as Long
@@ -80,6 +82,7 @@ class CalendarViewModel @Inject constructor(
                 val allAppointments = array[3] as List<Appointment>
                 val selectedCatId = array[4] as Long?
                 val userName = array[5] as String?
+                val isPro = array[6] as Boolean
 
                 val calendar = Calendar.getInstance().apply {
                     timeInMillis = date
@@ -109,7 +112,8 @@ class CalendarViewModel @Inject constructor(
                     allAppointments = filteredAll,
                     categories = categories,
                     selectedCategoryId = selectedCatId,
-                    userName = userName
+                    userName = userName,
+                    isProUser = isPro
                 )
             }.collect { newState ->
                 _uiState.value = newState

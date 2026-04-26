@@ -32,6 +32,7 @@ fun CategoryEditScreen(
         topBar = {
             AppTopBar(
                 areaName = if (uiState.isEditMode) "Kategorie bearbeiten" else "Neue Kategorie",
+                isPro = uiState.isProUser,
                 navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

@@ -42,10 +42,10 @@ class MainActivity : ComponentActivity() {
             val dynamicColor by settingsViewModel.dynamicColor.collectAsState()
             
             var showPermissionDialog by remember { mutableStateOf(false) }
-            val isFirstRun by settingsViewModel.isFirstRunCompleted.collectAsState()
+            val isPermissionDialogShown by settingsViewModel.isPermissionDialogShown.collectAsState()
 
-            LaunchedEffect(isFirstRun) {
-                if (!isFirstRun) {
+            LaunchedEffect(isPermissionDialogShown) {
+                if (!isPermissionDialogShown) {
                     showPermissionDialog = true
                 }
             }
@@ -79,7 +79,10 @@ class MainActivity : ComponentActivity() {
 
                     if (showPermissionDialog) {
                         PermissionRequestDialog(
-                            onDismiss = { showPermissionDialog = false },
+                            onDismiss = { 
+                                settingsViewModel.setPermissionDialogShown(true)
+                                showPermissionDialog = false 
+                            },
                             onRequest = {
                                 val permissions = mutableListOf(
                                     Manifest.permission.READ_CONTACTS
@@ -88,6 +91,7 @@ class MainActivity : ComponentActivity() {
                                     permissions.add(Manifest.permission.POST_NOTIFICATIONS)
                                 }
                                 permissionLauncher.launch(permissions.toTypedArray())
+                                settingsViewModel.setPermissionDialogShown(true)
                                 showPermissionDialog = false
                             }
                         )

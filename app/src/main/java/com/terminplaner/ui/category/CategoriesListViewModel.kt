@@ -13,6 +13,7 @@ import javax.inject.Inject
 data class CategoriesListUiState(
     val categories: List<Category> = emptyList(),
     val userName: String? = null,
+    val isProUser: Boolean = false,
     val isLoading: Boolean = false
 )
 
@@ -35,6 +36,12 @@ class CategoriesListViewModel @Inject constructor(
         viewModelScope.launch {
             themePreferences.userName.collect { name ->
                 _uiState.update { it.copy(userName = name) }
+            }
+        }
+
+        viewModelScope.launch {
+            themePreferences.isProUser.collect { isPro ->
+                _uiState.update { it.copy(isProUser = isPro) }
             }
         }
     }

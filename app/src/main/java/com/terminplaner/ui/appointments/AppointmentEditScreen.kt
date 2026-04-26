@@ -89,6 +89,7 @@ fun AppointmentEditScreen(
         topBar = {
             AppTopBar(
                 areaName = if (uiState.isEditMode) "Termin bearbeiten" else "Neuer Termin",
+                isPro = uiState.isProUser,
                 navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

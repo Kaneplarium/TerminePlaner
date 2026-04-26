@@ -58,6 +58,7 @@ fun CalendarScreen(
         topBar = {
             AppTopBar(
                 areaName = "Kalender",
+                isPro = uiState.isProUser,
                 navController = navController
             )
         }
