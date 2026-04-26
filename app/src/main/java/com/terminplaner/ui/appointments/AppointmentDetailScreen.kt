@@ -127,6 +127,6 @@ fun DetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: Stri
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.width(12.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyLarge)
+        Text(text = text, style = MaterialTheme.typography.titleMedium) // Same as date label
     }
 }

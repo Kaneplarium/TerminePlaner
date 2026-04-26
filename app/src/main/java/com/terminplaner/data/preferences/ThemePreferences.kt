@@ -25,16 +25,22 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
         val DARK_MODE_KEY = intPreferencesKey("dark_mode")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
         val USER_NAME_KEY = stringPreferencesKey("user_name")
+        val EMPLOYER_KEY = stringPreferencesKey("employer")
         val STORAGE_PATH_KEY = stringPreferencesKey("storage_path")
         val FIRST_RUN_COMPLETED_KEY = booleanPreferencesKey("first_run_completed")
         val TRASH_AUTO_DELETE_DAYS_KEY = intPreferencesKey("trash_auto_delete_days")
         val DELETE_LINKED_TASKS_KEY = booleanPreferencesKey("delete_linked_tasks")
-        val IS_PRO_USER_KEY = booleanPreferencesKey("is_pro_user")
-        val PERMISSION_DIALOG_SHOWN_KEY = booleanPreferencesKey("permission_dialog_shown")
+        val USER_STATUS_KEY = intPreferencesKey("user_status")
+        val SMARTWATCH_SYNC_KEY = booleanPreferencesKey("smartwatch_sync")
+        
         private const val DEFAULT_COLOR = 0xFFE53935 // Red
         const val MODE_SYSTEM = 0
         const val MODE_LIGHT = 1
         const val MODE_DARK = 2
+        
+        const val STATUS_NONE = 0
+        const val STATUS_PRO = 1
+        const val STATUS_BUSINESS = 2
     }
 
     val themeColor: Flow<Long> = context.dataStore.data.map { preferences ->
@@ -53,6 +59,10 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
         preferences[USER_NAME_KEY]
     }
 
+    val employer: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[EMPLOYER_KEY]
+    }
+
     val storagePath: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[STORAGE_PATH_KEY]
     }
@@ -69,12 +79,12 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
         preferences[DELETE_LINKED_TASKS_KEY] ?: true
     }
 
-    val isProUser: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[IS_PRO_USER_KEY] ?: false
+    val userStatus: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[USER_STATUS_KEY] ?: STATUS_NONE
     }
 
-    val isPermissionDialogShown: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[PERMISSION_DIALOG_SHOWN_KEY] ?: false
+    val smartwatchSync: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SMARTWATCH_SYNC_KEY] ?: false
     }
 
     suspend fun setThemeColor(color: Long) {
@@ -101,6 +111,16 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
                 preferences.remove(USER_NAME_KEY)
             } else {
                 preferences[USER_NAME_KEY] = name
+            }
+        }
+    }
+
+    suspend fun setEmployer(name: String?) {
+        context.dataStore.edit { preferences ->
+            if (name == null) {
+                preferences.remove(EMPLOYER_KEY)
+            } else {
+                preferences[EMPLOYER_KEY] = name
             }
         }
     }
@@ -133,15 +153,15 @@ class ThemePreferences @Inject constructor(@param:ApplicationContext private val
         }
     }
 
-    suspend fun setProUser(enabled: Boolean) {
+    suspend fun setUserStatus(status: Int) {
         context.dataStore.edit { preferences ->
-            preferences[IS_PRO_USER_KEY] = enabled
+            preferences[USER_STATUS_KEY] = status
         }
     }
 
-    suspend fun setPermissionDialogShown(shown: Boolean) {
+    suspend fun setSmartwatchSync(enabled: Boolean) {
         context.dataStore.edit { preferences ->
-            preferences[PERMISSION_DIALOG_SHOWN_KEY] = shown
+            preferences[SMARTWATCH_SYNC_KEY] = enabled
         }
     }
 }

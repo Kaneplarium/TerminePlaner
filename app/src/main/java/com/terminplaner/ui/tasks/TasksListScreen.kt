@@ -46,7 +46,7 @@ fun TasksListScreen(
             Column {
                 AppTopBar(
                     areaName = "Aufgaben",
-                    isPro = uiState.isProUser,
+                    userStatus = uiState.userStatus,
                     navController = navController
                 )
                 TabRow(selectedTabIndex = selectedTab) {

@@ -44,10 +44,10 @@ class TrashViewModel @Inject constructor(
         initialValue = null
     )
 
-    val isProUser = themePreferences.isProUser.stateIn(
+    val userStatus = themePreferences.userStatus.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
+        initialValue = ThemePreferences.STATUS_NONE
     )
 
     init {

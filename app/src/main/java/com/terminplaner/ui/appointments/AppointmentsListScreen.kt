@@ -36,7 +36,7 @@ fun AppointmentsListScreen(
             Column {
                 AppTopBar(
                     areaName = "Termine",
-                    isPro = uiState.isProUser,
+                    userStatus = uiState.userStatus,
                     navController = navController
                 )
                 TabRow(selectedTabIndex = selectedTab) {

@@ -22,13 +22,13 @@ fun FeaturesScreen(
     navController: NavController,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val isProUser by viewModel.isProUser.collectAsState()
+    val userStatus by viewModel.userStatus.collectAsState()
 
     Scaffold(
         topBar = {
             AppTopBar(
                 areaName = "Funktionsübersicht",
-                isPro = isProUser,
+                userStatus = userStatus,
                 navController = navController
             )
         }

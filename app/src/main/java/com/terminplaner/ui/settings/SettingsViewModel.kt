@@ -66,6 +66,12 @@ class SettingsViewModel @Inject constructor(
         initialValue = null
     )
 
+    val employer = themePreferences.employer.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
     val trashAutoDeleteDays = themePreferences.trashAutoDeleteDays.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -84,13 +90,13 @@ class SettingsViewModel @Inject constructor(
         initialValue = false
     )
 
-    val isProUser = themePreferences.isProUser.stateIn(
+    val userStatus = themePreferences.userStatus.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
+        initialValue = ThemePreferences.STATUS_NONE
     )
 
-    val isPermissionDialogShown = themePreferences.isPermissionDialogShown.stateIn(
+    val smartwatchSync = themePreferences.smartwatchSync.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = false
@@ -114,6 +120,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setEmployer(name: String?) {
+        viewModelScope.launch {
+            themePreferences.setEmployer(name)
+        }
+    }
+
     fun setTrashAutoDeleteDays(days: Int) {
         viewModelScope.launch {
             themePreferences.setTrashAutoDeleteDays(days)
@@ -126,15 +138,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setProUser(enabled: Boolean) {
+    fun setUserStatus(status: Int) {
         viewModelScope.launch {
-            themePreferences.setProUser(enabled)
+            themePreferences.setUserStatus(status)
         }
     }
 
-    fun setPermissionDialogShown(shown: Boolean) {
+    fun setSmartwatchSync(enabled: Boolean) {
         viewModelScope.launch {
-            themePreferences.setPermissionDialogShown(shown)
+            themePreferences.setSmartwatchSync(enabled)
         }
     }
 

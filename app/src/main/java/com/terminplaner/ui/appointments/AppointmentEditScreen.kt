@@ -3,6 +3,7 @@ package com.terminplaner.ui.appointments
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,10 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.terminplaner.data.preferences.ThemePreferences
 import com.terminplaner.ui.components.AppTopBar
 import com.terminplaner.ui.components.ColorPicker
 import com.terminplaner.ui.components.TimeDropdown
@@ -89,7 +92,7 @@ fun AppointmentEditScreen(
         topBar = {
             AppTopBar(
                 areaName = if (uiState.isEditMode) "Termin bearbeiten" else "Neuer Termin",
-                isPro = uiState.isProUser,
+                userStatus = uiState.userStatus,
                 navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -100,7 +103,10 @@ fun AppointmentEditScreen(
                     IconButton(onClick = { photoLauncher.launch(null) }) {
                         Icon(Icons.Default.CameraAlt, contentDescription = "Flyer scannen")
                     }
-                    IconButton(onClick = { viewModel.onSaveClick() }) {
+                    IconButton(
+                        onClick = { viewModel.onSaveClick() },
+                        enabled = if (uiState.userStatus == ThemePreferences.STATUS_BUSINESS) uiState.isConfirmed else true
+                    ) {
                         Icon(Icons.Default.Check, contentDescription = "Fertig")
                     }
                 }
@@ -141,7 +147,7 @@ fun AppointmentEditScreen(
             OutlinedTextField(
                 value = uiState.title,
                 onValueChange = { viewModel.updateTitle(it) },
-                label = { Text("Titel") },
+                label = { Text("Titel", style = MaterialTheme.typography.titleMedium) },
                 modifier = Modifier.fillMaxWidth(),
                 isError = uiState.titleError,
                 supportingText = if (uiState.titleError) {
@@ -152,7 +158,7 @@ fun AppointmentEditScreen(
             OutlinedTextField(
                 value = uiState.description,
                 onValueChange = { viewModel.updateDescription(it) },
-                label = { Text("Beschreibung") },
+                label = { Text("Beschreibung", style = MaterialTheme.typography.titleMedium) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
@@ -160,7 +166,7 @@ fun AppointmentEditScreen(
             OutlinedTextField(
                 value = uiState.location,
                 onValueChange = { viewModel.updateLocation(it) },
-                label = { Text("Veranstaltungsort") },
+                label = { Text("Veranstaltungsort", style = MaterialTheme.typography.titleMedium) },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) }
             )
@@ -168,22 +174,24 @@ fun AppointmentEditScreen(
             OutlinedTextField(
                 value = uiState.persons,
                 onValueChange = { viewModel.updatePersons(it) },
-                label = { Text("Personen") },
+                label = { Text("Personen", style = MaterialTheme.typography.titleMedium) },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.People, contentDescription = null) },
                 trailingIcon = {
-                    IconButton(onClick = {
-                        when (PackageManager.PERMISSION_GRANTED) {
-                            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) -> {
-                                val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
-                                contactLauncher.launch(intent)
+                    if (uiState.userStatus != ThemePreferences.STATUS_BUSINESS) {
+                        IconButton(onClick = {
+                            when (PackageManager.PERMISSION_GRANTED) {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) -> {
+                                    val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+                                    contactLauncher.launch(intent)
+                                }
+                                else -> {
+                                    permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                                }
                             }
-                            else -> {
-                                permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                            }
+                        }) {
+                            Icon(Icons.Default.ContactPage, contentDescription = "Kontakte")
                         }
-                    }) {
-                        Icon(Icons.Default.ContactPage, contentDescription = "Kontakte")
                     }
                 }
             )
@@ -191,17 +199,28 @@ fun AppointmentEditScreen(
             OutlinedTextField(
                 value = dateFormat.format(Date(uiState.dateTime)),
                 onValueChange = { },
-                label = { Text("Datum") },
-                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Datum", style = MaterialTheme.typography.titleMedium) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
                 readOnly = true,
+                enabled = false,
                 isError = uiState.isPastDateError,
                 supportingText = if (uiState.isPastDateError) {
                     { Text("Termine in der Vergangenheit sind nicht erlaubt") }
                 } else null,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = if (uiState.isPastDateError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = if (uiState.isPastDateError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Datum wählen")
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Settings, 
+                        contentDescription = "Datum wählen",
+                        modifier = Modifier.clickable { showDatePicker = true }
+                    )
                 }
             )
 
@@ -223,6 +242,52 @@ fun AppointmentEditScreen(
                     currentTime = uiState.endDateTime,
                     onTimeSelected = { viewModel.updateEndDateTime(it) },
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (uiState.userStatus == ThemePreferences.STATUS_BUSINESS) {
+                HorizontalDivider()
+                Text("Kunden-Details", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                
+                OutlinedTextField(
+                    value = uiState.customerName,
+                    onValueChange = { viewModel.updateCustomerName(it) },
+                    label = { Text("Kundenname") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = uiState.customerEmail,
+                    onValueChange = { viewModel.updateCustomerEmail(it) },
+                    label = { Text("Kunden-E-Mail") },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:${uiState.customerEmail}")
+                                putExtra(Intent.EXTRA_SUBJECT, "Terminbestätigung: ${uiState.title}")
+                                putExtra(Intent.EXTRA_TEXT, "Guten Tag ${uiState.customerName},\n\nhiermit lade ich Sie zum Termin '${uiState.title}' am ${dateFormat.format(Date(uiState.dateTime))} um ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(uiState.dateTime))} ein.")
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Einladung senden"))
+                        }) {
+                            Icon(Icons.Default.Email, contentDescription = "Mail senden")
+                        }
+                    }
+                )
+            }
+
+            if (uiState.userStatus == ThemePreferences.STATUS_PRO || uiState.userStatus == ThemePreferences.STATUS_BUSINESS) {
+                ListItem(
+                    headlineContent = { Text("Termin vom Kunden bestätigt") },
+                    trailingContent = {
+                        Checkbox(
+                            checked = uiState.isConfirmed,
+                            onCheckedChange = { viewModel.updateConfirmation(it) }
+                        )
+                    },
+                    supportingContent = if (uiState.userStatus == ThemePreferences.STATUS_BUSINESS) {
+                        { Text("Pflichtfeld für Business-Termine", color = MaterialTheme.colorScheme.error) }
+                    } else null
                 )
             }
 
@@ -252,7 +317,7 @@ fun AppointmentEditScreen(
                         value = uiState.categories.find { it.id == uiState.categoryId }?.name ?: "Keine Kategorie",
                         onValueChange = { },
                         readOnly = true,
-                        label = { Text("Kategorie") },
+                        label = { Text("Kategorie", style = MaterialTheme.typography.titleMedium) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(),
@@ -292,6 +357,7 @@ fun AppointmentEditScreen(
             OutlinedButton(
                 onClick = { viewModel.updateFocusMode(!uiState.isFocusMode) },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = uiState.userStatus != ThemePreferences.STATUS_BUSINESS,
                 colors = if (uiState.isFocusMode) {
                     ButtonDefaults.outlinedButtonColors(
                         containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f),

@@ -9,12 +9,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.terminplaner.data.preferences.ThemePreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
     areaName: String,
-    isPro: Boolean = false,
+    userStatus: Int = ThemePreferences.STATUS_NONE,
     navController: NavController,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {}
@@ -27,17 +28,20 @@ fun AppTopBar(
                         text = "Terminplaner",
                         style = MaterialTheme.typography.titleLarge
                     )
-                    if (isPro) {
+                    if (userStatus != ThemePreferences.STATUS_NONE) {
+                        val badgeColor = if (userStatus == ThemePreferences.STATUS_PRO) Color(0xFFFFD700) else Color(0xFFA020F0)
+                        val badgeText = if (userStatus == ThemePreferences.STATUS_PRO) "PRO" else "Business"
+                        
                         Spacer(Modifier.width(8.dp))
                         Surface(
-                            color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                            color = badgeColor.copy(alpha = 0.2f),
                             shape = MaterialTheme.shapes.extraSmall,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor)
                         ) {
                             Text(
-                                text = "PRO",
+                                text = badgeText,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFFFFD700),
+                                color = badgeColor,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                             )

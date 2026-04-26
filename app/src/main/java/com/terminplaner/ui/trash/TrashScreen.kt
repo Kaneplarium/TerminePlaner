@@ -32,7 +32,7 @@ fun TrashScreen(
     val uiState by viewModel.uiState.collectAsState()
     val trashAutoDeleteDays by viewModel.trashAutoDeleteDays.collectAsState()
     val deleteLinkedTasks by viewModel.deleteLinkedTasks.collectAsState()
-    val isProUser by viewModel.isProUser.collectAsState()
+    val userStatus by viewModel.userStatus.collectAsState()
     val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
 
     var showEmptyTrashDialog by remember { mutableStateOf(false) }
@@ -42,7 +42,7 @@ fun TrashScreen(
         topBar = {
             AppTopBar(
                 areaName = "Papierkorb",
-                isPro = isProUser,
+                userStatus = userStatus,
                 navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

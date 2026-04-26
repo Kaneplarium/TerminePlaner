@@ -17,7 +17,7 @@ data class CategoryEditUiState(
     val name: String = "",
     val color: Int = 0xFF2196F3.toInt(),
     val userName: String? = null,
-    val isProUser: Boolean = false,
+    val userStatus: Int = ThemePreferences.STATUS_NONE,
     val isEditMode: Boolean = false,
     val isSaved: Boolean = false,
     val nameError: Boolean = false
@@ -58,8 +58,8 @@ class CategoryEditViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            themePreferences.isProUser.collect { isPro ->
-                _uiState.update { it.copy(isProUser = isPro) }
+            themePreferences.userStatus.collect { status ->
+                _uiState.update { it.copy(userStatus = status) }
             }
         }
     }

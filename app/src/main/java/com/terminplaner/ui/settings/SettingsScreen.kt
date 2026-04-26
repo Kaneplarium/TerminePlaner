@@ -43,16 +43,21 @@ fun SettingsScreen(
     val darkThemeMode by viewModel.darkThemeMode.collectAsState()
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val userName by viewModel.userName.collectAsState()
-    val isProUser by viewModel.isProUser.collectAsState()
+    val employer by viewModel.employer.collectAsState()
+    val userStatus by viewModel.userStatus.collectAsState()
+    val smartwatchSync by viewModel.smartwatchSync.collectAsState()
+    
     val context = LocalContext.current
     val dndManager = remember { DndManager(context) }
 
     var showNameDialog by remember { mutableStateOf(false) }
     var nameInput by remember(userName) { mutableStateOf(userName ?: "") }
     
+    var showEmployerDialog by remember { mutableStateOf(false) }
+    var employerInput by remember(employer) { mutableStateOf(employer ?: "") }
+    
     var versionTapCount by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
-    var showGiftDialog by remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -68,7 +73,7 @@ fun SettingsScreen(
         topBar = {
             AppTopBar(
                 areaName = "Einstellungen",
-                isPro = isProUser,
+                userStatus = userStatus,
                 navController = navController
             )
         }
@@ -85,6 +90,15 @@ fun SettingsScreen(
                 leadingContent = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.clickable { showNameDialog = true }
             )
+
+            if (userStatus == ThemePreferences.STATUS_BUSINESS) {
+                ListItem(
+                    headlineContent = { Text("Arbeitgeber") },
+                    supportingContent = { Text(employer ?: "Nicht festgelegt") },
+                    leadingContent = { Icon(Icons.Default.Business, contentDescription = null) },
+                    modifier = Modifier.clickable { showEmployerDialog = true }
+                )
+            }
 
             HorizontalDivider()
 
@@ -111,6 +125,23 @@ fun SettingsScreen(
                 modifier = Modifier.clickable { navController.navigate(Screen.Trash.route) }
             )
 
+            if (userStatus == ThemePreferences.STATUS_PRO) {
+                ListItem(
+                    headlineContent = { Text("App weiterempfehlen") },
+                    supportingContent = { Text("Teile die App mit deinen Freunden") },
+                    leadingContent = { Icon(Icons.Default.Share, contentDescription = null) },
+                    modifier = Modifier.clickable {
+                        val sendIntent: Intent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, "Schau dir diese tolle Terminplaner App an!")
+                            type = "text/plain"
+                        }
+                        val shareIntent = Intent.createChooser(sendIntent, null)
+                        context.startActivity(shareIntent)
+                    }
+                )
+            }
+
             HorizontalDivider()
 
             Text(
@@ -129,7 +160,31 @@ fun SettingsScreen(
             )
 
             ListItem(
-                headlineContent = { Text("Daten exportieren") },
+                headlineContent = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Daten exportieren")
+                        Spacer(Modifier.width(8.dp))
+                        var showStorageTip by remember { mutableStateOf(false) }
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Hinweis",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clickable { showStorageTip = true }
+                        )
+                        if (showStorageTip) {
+                            AlertDialog(
+                                onDismissRequest = { showStorageTip = false },
+                                title = { Text("Sicherheitshinweis") },
+                                text = { Text("Denken Sie daran Ihre Daten regelmäßig zu sichern!") },
+                                confirmButton = {
+                                    TextButton(onClick = { showStorageTip = false }) { Text("OK") }
+                                }
+                            )
+                        }
+                    }
+                },
                 supportingContent = { Text("Termine und Kategorien speichern") },
                 leadingContent = { Icon(Icons.Default.Upload, contentDescription = null) },
                 modifier = Modifier.clickable { viewModel.exportData(context) }
@@ -140,6 +195,27 @@ fun SettingsScreen(
                 supportingContent = { Text("Daten aus JSON laden") },
                 leadingContent = { Icon(Icons.Default.Download, contentDescription = null) },
                 modifier = Modifier.clickable { importLauncher.launch("application/json") }
+            )
+
+            HorizontalDivider()
+
+            Text(
+                text = "Integrationen",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            ListItem(
+                headlineContent = { Text("Smartwatch Verknüpfung") },
+                supportingContent = { Text("Termine automatisch auf die Uhr übertragen") },
+                leadingContent = { Icon(Icons.Default.Watch, contentDescription = null) },
+                trailingContent = {
+                    Switch(
+                        checked = smartwatchSync,
+                        onCheckedChange = { viewModel.setSmartwatchSync(it) }
+                    )
+                }
             )
 
             HorizontalDivider()
@@ -196,7 +272,7 @@ fun SettingsScreen(
                 }
             )
 
-            if (!dndManager.hasPermission()) {
+            if (userStatus != ThemePreferences.STATUS_BUSINESS && !dndManager.hasPermission()) {
                 ListItem(
                     headlineContent = { Text("Fokus-Modus Berechtigung") },
                     supportingContent = { Text("Erforderlich für automatischen 'Bitte nicht stören' Modus") },
@@ -258,16 +334,25 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Version 2026.04.26.00.50",
+                    text = "Version 2026.04.26.20.55",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clickable {
                         versionTapCount++
-                        if (versionTapCount >= 3) {
-                            showConfetti = true
-                            showGiftDialog = true
-                            viewModel.setProUser(true)
-                            versionTapCount = 0
+                        when (versionTapCount) {
+                            3 -> {
+                                if (userStatus != ThemePreferences.STATUS_PRO) {
+                                    showConfetti = true
+                                    viewModel.setUserStatus(ThemePreferences.STATUS_PRO)
+                                }
+                            }
+                            5 -> {
+                                if (userStatus != ThemePreferences.STATUS_BUSINESS) {
+                                    showConfetti = true
+                                    viewModel.setUserStatus(ThemePreferences.STATUS_BUSINESS)
+                                }
+                                versionTapCount = 0
+                            }
                         }
                     }
                 )
@@ -329,14 +414,29 @@ fun SettingsScreen(
         )
     }
 
-    if (showGiftDialog) {
+    if (showEmployerDialog) {
         AlertDialog(
-            onDismissRequest = { showGiftDialog = false },
-            title = { Text("Überraschung!") },
-            text = { Text("Geschenk erhalten: Du hast den PRO-Status freigeschaltet!") },
+            onDismissRequest = { showEmployerDialog = false },
+            title = { Text("Arbeitgeber festlegen") },
+            text = {
+                OutlinedTextField(
+                    value = employerInput,
+                    onValueChange = { employerInput = it },
+                    label = { Text("Name des Unternehmens") },
+                    singleLine = true
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { showGiftDialog = false }) {
-                    Text("Bestätigen")
+                TextButton(onClick = {
+                    viewModel.setEmployer(employerInput)
+                    showEmployerDialog = false
+                }) {
+                    Text("Speichern")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmployerDialog = false }) {
+                    Text("Abbrechen")
                 }
             }
         )

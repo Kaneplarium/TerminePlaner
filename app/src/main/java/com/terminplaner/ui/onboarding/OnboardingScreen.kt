@@ -29,7 +29,7 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     var step by remember { mutableIntStateOf(0) }
-    val totalSteps = 6
+    val totalSteps = 5
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -57,7 +57,6 @@ fun OnboardingScreen(
                             onColorSelect = { viewModel.setThemeColor(it) }
                         )
                         4 -> StorageStep(onPathSelect = { viewModel.setStoragePath(it) })
-                        5 -> PermissionStep()
                     }
                 }
             }
@@ -316,46 +315,6 @@ fun StorageStep(onPathSelect: (String) -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-fun PermissionStep() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            Icons.Default.Notifications,
-            contentDescription = null, 
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = "Fast fertig!",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = "Erlaube Benachrichtigungen, damit du nie wieder einen Termin verpasst. \n\nZudem benötigen wir Zugriff auf deine Kontakte für eine schnellere Terminerstellung.",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(Modifier.height(24.dp))
-        
-        Surface(
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "WICHTIG: Deine Daten werden nur lokal gespeichert. Wir haben KEINEN Zugriff auf eine Cloud. Sichere deine Backups regelmäßig!",
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(16.dp),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onTertiaryContainer
             )
         }
     }

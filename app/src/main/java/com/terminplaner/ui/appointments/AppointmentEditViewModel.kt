@@ -23,6 +23,9 @@ data class AppointmentEditUiState(
     val description: String = "",
     val location: String = "",
     val persons: String = "",
+    val customerName: String = "",
+    val customerEmail: String = "",
+    val isConfirmed: Boolean = false,
     val dateTime: Long = System.currentTimeMillis(),
     val endDateTime: Long = System.currentTimeMillis() + 3600000, // + 1 hour
     val categoryId: Long? = null,
@@ -30,7 +33,7 @@ data class AppointmentEditUiState(
     val isFocusMode: Boolean = false,
     val categories: List<Category> = emptyList(),
     val userName: String? = null,
-    val isProUser: Boolean = false,
+    val userStatus: Int = ThemePreferences.STATUS_NONE,
     val isEditMode: Boolean = false,
     val isSaved: Boolean = false,
     val titleError: Boolean = false,
@@ -72,8 +75,9 @@ class AppointmentEditViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            themePreferences.isProUser.collect { isPro ->
-                _uiState.update { it.copy(isProUser = isPro) }
+            themePreferences.userStatus.collect { status ->
+                val focus = if (status == ThemePreferences.STATUS_BUSINESS) true else _uiState.value.isFocusMode
+                _uiState.update { it.copy(userStatus = status, isFocusMode = focus) }
             }
         }
 
@@ -87,6 +91,9 @@ class AppointmentEditViewModel @Inject constructor(
                             description = appointment.description ?: "",
                             location = appointment.location ?: "",
                             persons = appointment.persons ?: "",
+                            customerName = appointment.customerName ?: "",
+                            customerEmail = appointment.customerEmail ?: "",
+                            isConfirmed = appointment.isConfirmed,
                             dateTime = appointment.dateTime,
                             endDateTime = appointment.endDateTime,
                             categoryId = appointment.categoryId,
@@ -161,6 +168,21 @@ class AppointmentEditViewModel @Inject constructor(
         autoSave()
     }
 
+    fun updateCustomerName(name: String) {
+        _uiState.update { it.copy(customerName = name) }
+        autoSave()
+    }
+
+    fun updateCustomerEmail(email: String) {
+        _uiState.update { it.copy(customerEmail = email) }
+        autoSave()
+    }
+
+    fun updateConfirmation(confirmed: Boolean) {
+        _uiState.update { it.copy(isConfirmed = confirmed) }
+        autoSave()
+    }
+
     fun updateDateTime(dateTime: Long) {
         val duration = _uiState.value.endDateTime - _uiState.value.dateTime
         _uiState.update { 
@@ -213,6 +235,7 @@ class AppointmentEditViewModel @Inject constructor(
     }
 
     fun updateFocusMode(isFocus: Boolean) {
+        if (_uiState.value.userStatus == ThemePreferences.STATUS_BUSINESS) return
         _uiState.update { it.copy(isFocusMode = isFocus) }
         autoSave()
     }
@@ -233,6 +256,9 @@ class AppointmentEditViewModel @Inject constructor(
                 description = state.description.ifBlank { null },
                 location = state.location.ifBlank { null },
                 persons = state.persons.ifBlank { null },
+                customerName = state.customerName.ifBlank { null },
+                customerEmail = state.customerEmail.ifBlank { null },
+                isConfirmed = state.isConfirmed,
                 dateTime = state.dateTime,
                 endDateTime = state.endDateTime,
                 categoryId = state.categoryId,

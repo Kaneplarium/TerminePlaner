@@ -30,7 +30,7 @@ fun CategoriesListScreen(
         topBar = {
             AppTopBar(
                 areaName = "Kategorien",
-                isPro = uiState.isProUser,
+                userStatus = uiState.userStatus,
                 navController = navController,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

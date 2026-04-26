@@ -25,7 +25,7 @@ data class TaskEditUiState(
     val reminderTime: Long? = null,
     val appointments: List<Appointment> = emptyList(),
     val userName: String? = null,
-    val isProUser: Boolean = false,
+    val userStatus: Int = ThemePreferences.STATUS_NONE,
     val isEditMode: Boolean = false,
     val isSaved: Boolean = false,
     val titleError: Boolean = false,
@@ -66,8 +66,8 @@ class TaskEditViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            themePreferences.isProUser.collect { isPro ->
-                _uiState.update { it.copy(isProUser = isPro) }
+            themePreferences.userStatus.collect { status ->
+                _uiState.update { it.copy(userStatus = status) }
             }
         }
 
