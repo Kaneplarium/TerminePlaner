@@ -1,7 +1,9 @@
 package com.terminplaner.ui.tasks
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -9,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.terminplaner.ui.components.TimeDropdown
 import java.text.SimpleDateFormat
@@ -36,17 +40,37 @@ fun TaskEditContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Header with Save button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onCancel) {
+                Text("Abbrechen")
+            }
+            Text(
+                text = if (uiState.isEditMode) "Aufgabe bearbeiten" else "Neue Aufgabe",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Button(onClick = { viewModel.save() }) {
+                Text("Speichern")
+            }
+        }
+
         if (uiState.suggestedReminderTime != null) {
             Card(
+                modifier = Modifier.padding(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null)
@@ -63,125 +87,149 @@ fun TaskEditContent(
             }
         }
 
-        Text("Erinnerung", style = MaterialTheme.typography.titleMedium)
-
-        OutlinedTextField(
-            value = uiState.reminderTime?.let { fullDateFormat.format(Date(it)) } ?: "Keine Erinnerung",
-            onValueChange = { },
-            label = { Text("Erinnerungsdatum") },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true,
-            trailingIcon = {
-                IconButton(onClick = { showDatePicker = true }) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Datum wählen")
-                }
-            }
-        )
-
-        TimeDropdown(
-            label = "Uhrzeit",
-            currentTime = uiState.reminderTime ?: System.currentTimeMillis(),
-            onTimeSelected = { viewModel.updateReminderTime(it) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (uiState.reminderTime != null) {
-            TextButton(onClick = { viewModel.updateReminderTime(null) }) {
-                Text("Erinnerung entfernen")
+        TaskEditSection(title = "DETAILS") {
+            TaskEditGroup {
+                OutlinedTextField(
+                    value = uiState.title,
+                    onValueChange = { viewModel.updateTitle(it) },
+                    placeholder = { Text("Titel") },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = uiState.titleError,
+                    colors = transparentTextFieldColors()
+                )
+                HorizontalDivider(modifier = Modifier.padding(start = 16.dp), thickness = 0.5.dp)
+                OutlinedTextField(
+                    value = uiState.description,
+                    onValueChange = { viewModel.updateDescription(it) },
+                    placeholder = { Text("Beschreibung (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    colors = transparentTextFieldColors()
+                )
             }
         }
 
-        Divider()
-
-        OutlinedTextField(
-            value = uiState.title,
-            onValueChange = { viewModel.updateTitle(it) },
-            label = { Text("Titel") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = uiState.titleError,
-            supportingText = if (uiState.titleError) {
-                { Text("Titel ist erforderlich") }
-            } else null
-        )
-
-        OutlinedTextField(
-            value = uiState.description,
-            onValueChange = { viewModel.updateDescription(it) },
-            label = { Text("Beschreibung (optional)") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3
-        )
-
-        Text("Zu Termin zuordnen", style = MaterialTheme.typography.titleMedium)
-
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
-        ) {
-            val selectedAppointment = uiState.appointments.find { it.id == uiState.appointmentId }
-            OutlinedTextField(
-                value = if (selectedAppointment != null) {
-                    "${selectedAppointment.title} (${dateFormat.format(Date(selectedAppointment.dateTime))})"
-                } else {
-                    "Kein Termin"
-                },
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("Termin wählen") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                }
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Kein Termin") },
-                    onClick = {
-                        viewModel.updateAppointment(null)
-                        expanded = false
+        TaskEditSection(title = "TYP & PRIORITÄT") {
+            TaskEditGroup {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.BusinessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(12.dp))
+                        Text("Business Aufgabe")
                     }
-                )
-                uiState.appointments.forEach { appointment ->
-                    DropdownMenuItem(
-                        text = { 
-                            Text("${appointment.title} (${dateFormat.format(Date(appointment.dateTime))})") 
-                        },
-                        onClick = {
-                            viewModel.updateAppointment(appointment.id)
-                            expanded = false
-                        }
+                    Switch(
+                        checked = uiState.isBusiness,
+                        onCheckedChange = { viewModel.updateBusiness(it) },
+                        colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF34C759))
+                    )
+                }
+                HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.PriorityHigh, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.width(12.dp))
+                        Text("Wichtig")
+                    }
+                    Switch(
+                        checked = uiState.isImportant,
+                        onCheckedChange = { viewModel.updateImportant(it) },
+                        colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF34C759))
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            OutlinedButton(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Abbrechen")
-            }
-            Button(
-                onClick = { viewModel.save() },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Speichern")
+        TaskEditSection(title = "ERINNERUNG") {
+            TaskEditGroup {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(12.dp))
+                    Text("Datum", modifier = Modifier.weight(1f))
+                    Text(
+                        uiState.reminderTime?.let { fullDateFormat.format(Date(it)) } ?: "Keine",
+                        color = if (uiState.reminderTime != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                if (uiState.reminderTime != null) {
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp), thickness = 0.5.dp)
+                    TimeDropdown(
+                        label = "Uhrzeit",
+                        currentTime = uiState.reminderTime ?: System.currentTimeMillis(),
+                        onTimeSelected = { viewModel.updateReminderTime(it) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp), thickness = 0.5.dp)
+                    TextButton(
+                        onClick = { viewModel.updateReminderTime(null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Erinnerung entfernen")
+                    }
+                }
             }
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
+
+        TaskEditSection(title = "ZUORDNUNG") {
+            TaskEditGroup {
+                val selectedAppointment = uiState.appointments.find { it.id == uiState.appointmentId }
+                var expanded by remember { mutableStateOf(false) }
+                
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expanded = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Link, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Spacer(Modifier.width(12.dp))
+                        Text("Termin", modifier = Modifier.weight(1f))
+                        Text(
+                            selectedAppointment?.title ?: "Kein",
+                            color = if (selectedAppointment != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Kein Termin") },
+                            onClick = {
+                                viewModel.updateAppointment(null)
+                                expanded = false
+                            }
+                        )
+                        uiState.appointments.forEach { appointment ->
+                            DropdownMenuItem(
+                                text = { Text(appointment.title) },
+                                onClick = {
+                                    viewModel.updateAppointment(appointment.id)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(80.dp))
     }
 
     if (showDatePicker) {
@@ -219,3 +267,41 @@ fun TaskEditContent(
         }
     }
 }
+
+@Composable
+fun TaskEditSection(title: String, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.padding(top = 24.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 28.dp, bottom = 8.dp)
+        )
+        content()
+    }
+}
+
+@Composable
+fun TaskEditGroup(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        tonalElevation = 0.dp
+    ) {
+        Column(content = content)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun transparentTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = Color.Transparent,
+    unfocusedBorderColor = Color.Transparent,
+    disabledBorderColor = Color.Transparent,
+    errorBorderColor = Color.Transparent,
+    focusedContainerColor = Color.Transparent,
+    unfocusedContainerColor = Color.Transparent
+)

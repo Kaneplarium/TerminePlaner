@@ -2,8 +2,7 @@ package com.terminplaner.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -37,8 +36,7 @@ sealed class BottomNavItem(
     val title: String,
     val icon: ImageVector
 ) {
-    data object Calendar : BottomNavItem("calendar", "Kalender", Icons.Default.CalendarToday)
-    data object Appointments : BottomNavItem("appointments_list", "Termine", Icons.Default.Event)
-    data object Tasks : BottomNavItem("tasks_list", "Aufgaben", Icons.Default.CheckCircle)
+    data object Today : BottomNavItem("calendar", "Heute", Icons.Default.CalendarToday)
+    data object Tasks : BottomNavItem("tasks_list", "Aufgaben", Icons.Default.FormatListBulleted)
     data object Settings : BottomNavItem("settings", "Einstellungen", Icons.Default.Settings)
 }

@@ -12,9 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.terminplaner.data.preferences.ThemePreferences
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -28,6 +30,7 @@ fun AppointmentDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val appointment = uiState.appointments.find { it.id == appointmentId } ?: return
+    val isBusiness = uiState.userStatus == ThemePreferences.STATUS_BUSINESS
 
     val dateFormat = SimpleDateFormat("EEEE, dd. MMMM yyyy", Locale.GERMAN)
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -78,22 +81,45 @@ fun AppointmentDetailScreen(
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
 
+            if (appointment.isConfirmed) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = Color(0xFF34C759).copy(alpha = 0.1f),
+                    shape = MaterialTheme.shapes.extraSmall,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF34C759))
+                ) {
+                    Text(
+                        text = "BESTÄTIGT",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF2E7D32),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             DetailItem(
                 icon = Icons.Default.LocationOn,
-                text = appointment.location ?: "Kein Veranstaltungsort"
+                label = if (isBusiness) "STANDORT / LINK" else "TREFFPUNKT",
+                text = appointment.location ?: "Nicht festgelegt"
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             DetailItem(
                 icon = Icons.Default.People,
-                text = appointment.persons ?: "Keine Personen hinzugefügt"
+                label = if (isBusiness) "TEAM & MITARBEITER" else "FREUNDE & FAMILIE",
+                text = appointment.persons ?: "Keine hinzugefügt"
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            Text(
+                text = "ZEITPUNKT",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Text(
                 text = dateFormat.format(Date(appointment.dateTime)),
                 style = MaterialTheme.typography.titleMedium
@@ -108,9 +134,9 @@ fun AppointmentDetailScreen(
 
             if (!appointment.description.isNullOrBlank()) {
                 Text(
-                    text = "Beschreibung",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.secondary
+                    text = "BESCHREIBUNG",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -123,10 +149,18 @@ fun AppointmentDetailScreen(
 }
 
 @Composable
-fun DetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(text = text, style = MaterialTheme.typography.titleMedium) // Same as date label
+fun DetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, text: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(text = text, style = MaterialTheme.typography.titleMedium)
+        }
     }
 }

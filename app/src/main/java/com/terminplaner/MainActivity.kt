@@ -28,9 +28,10 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
-            val themeColorLong by settingsViewModel.themeColor.collectAsState()
             val darkThemeMode by settingsViewModel.darkThemeMode.collectAsState()
             val dynamicColor by settingsViewModel.dynamicColor.collectAsState()
+            val userStatus by settingsViewModel.userStatus.collectAsState()
+            val themeColor by settingsViewModel.themeColor.collectAsState()
             
             val useDarkTheme = when (darkThemeMode) {
                 ThemePreferences.MODE_LIGHT -> false
@@ -41,7 +42,8 @@ class MainActivity : ComponentActivity() {
             TerminplanerTheme(
                 darkTheme = useDarkTheme,
                 dynamicColor = dynamicColor,
-                primaryColor = Color(themeColorLong)
+                userStatus = userStatus,
+                primaryColor = themeColor
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

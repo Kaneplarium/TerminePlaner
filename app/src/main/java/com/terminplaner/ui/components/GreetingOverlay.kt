@@ -1,7 +1,6 @@
 package com.terminplaner.ui.components
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
@@ -9,12 +8,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.terminplaner.ui.settings.SettingsViewModel
 import kotlinx.coroutines.delay
 import java.util.*
 
@@ -23,10 +22,35 @@ fun GreetingOverlay(
     userName: String?,
     onFinished: () -> Unit
 ) {
+    val viewModel: SettingsViewModel = hiltViewModel()
+    val personalBirthday by viewModel.personalBirthday.collectAsState()
+    
     var isVisible by remember { mutableStateOf(true) }
     
-    val greeting = remember {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = remember(personalBirthday) {
+        val now = Calendar.getInstance()
+        val day = now.get(Calendar.DAY_OF_MONTH)
+        val month = now.get(Calendar.MONTH) // 0-based
+        val hour = now.get(Calendar.HOUR_OF_DAY)
+
+        // Check Birthday
+        if (personalBirthday != null && personalBirthday!! > 0) {
+            val bday = Calendar.getInstance().apply { timeInMillis = personalBirthday!! }
+            if (bday.get(Calendar.DAY_OF_MONTH) == day && bday.get(Calendar.MONTH) == month) {
+                return@remember "Alles Gute zum Geburtstag!"
+            }
+        }
+
+        // Check Christmas
+        if (month == Calendar.DECEMBER && day in 24..26) {
+            return@remember "Frohe Weihnachten!"
+        }
+
+        // Check Easter (Simplified for 2026: April 5)
+        if (month == Calendar.APRIL && day in 4..6) {
+            return@remember "Schöne Ostern!"
+        }
+
         when (hour) {
             in 5..11 -> "Guten Morgen"
             in 12..17 -> "Guten Tag"
@@ -50,17 +74,17 @@ fun GreetingOverlay(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.8f)),
+                .background(Color.Black),
             contentAlignment = Alignment.Center
         ) {
-            BokehBackground()
-            
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = greeting,
                     color = Color.White,
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Light
+                    fontWeight = FontWeight.Light,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
                 )
                 if (!userName.isNullOrBlank()) {
                     Text(
@@ -72,34 +96,6 @@ fun GreetingOverlay(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun BokehBackground() {
-    val circles = remember {
-        List(15) {
-            Triple(
-                Offset((0..1000).random().toFloat() / 1000f, (0..1000).random().toFloat() / 1000f),
-                (50..150).random().dp,
-                Color(
-                    red = (150..255).random() / 255f,
-                    green = (100..200).random() / 255f,
-                    blue = (200..255).random() / 255f,
-                    alpha = 0.3f
-                )
-            )
-        }
-    }
-
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        circles.forEach { (offset, radius, color) ->
-            drawCircle(
-                color = color,
-                radius = radius.toPx(),
-                center = Offset(offset.x * size.width, offset.y * size.height)
-            )
         }
     }
 }

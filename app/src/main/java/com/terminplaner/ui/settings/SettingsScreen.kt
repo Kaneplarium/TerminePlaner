@@ -1,34 +1,48 @@
 package com.terminplaner.ui.settings
 
+import android.Manifest
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.PermissionChecker
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.data.preferences.ThemePreferences
 import com.terminplaner.ui.components.AppTopBar
-import com.terminplaner.ui.components.ConfettiOverlay
 import com.terminplaner.ui.navigation.Screen
-import com.terminplaner.ui.theme.*
 import com.terminplaner.util.DndManager
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -38,26 +52,73 @@ fun SettingsScreen(
     navController: NavController,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val themeColor by viewModel.themeColor.collectAsState()
-    val darkThemeMode by viewModel.darkThemeMode.collectAsState()
-    val dynamicColor by viewModel.dynamicColor.collectAsState()
     val userName by viewModel.userName.collectAsState()
-    val employer by viewModel.employer.collectAsState()
+    val profilePictureUri by viewModel.profilePictureUri.collectAsState()
+    
+    val personalAddress by viewModel.personalAddress.collectAsState()
+    val personalBirthday by viewModel.personalBirthday.collectAsState()
+
+    val employerName by viewModel.employerName.collectAsState()
+    val employerAddress by viewModel.employerAddress.collectAsState()
+    val employerPLZ by viewModel.employerPLZ.collectAsState()
+    val employerCity by viewModel.employerCity.collectAsState()
+    
     val userStatus by viewModel.userStatus.collectAsState()
-    val smartwatchSync by viewModel.smartwatchSync.collectAsState()
+    val calendarVisibility by viewModel.calendarVisibility.collectAsState()
+    
+    // Personal Settings
+    val showWeekend by viewModel.showWeekend.collectAsState()
+    val showHolidays by viewModel.showHolidays.collectAsState()
+    val travelTime by viewModel.travelTime.collectAsState()
+    val defaultReminder by viewModel.defaultReminder.collectAsState()
+    val importBirthdays by viewModel.importBirthdays.collectAsState()
+    val allowInvitations by viewModel.allowInvitations.collectAsState()
+
+    // Business Settings
+    val bizRecurring by viewModel.bizRecurring.collectAsState()
+    val bizConfirmations by viewModel.bizConfirmations.collectAsState()
     
     val context = LocalContext.current
-    val dndManager = remember { DndManager(context) }
+    remember { DndManager(context) }
 
     var showNameDialog by remember { mutableStateOf(false) }
     var nameInput by remember(userName) { mutableStateOf(userName ?: "") }
     
+    var showPersonalDataDialog by remember { mutableStateOf(false) }
+
     var showEmployerDialog by remember { mutableStateOf(false) }
-    var employerInput by remember(employer) { mutableStateOf(employer ?: "") }
+    var employerNameInput by remember(employerName) { mutableStateOf(employerName ?: "") }
+    var employerAddressInput by remember(employerAddress) { mutableStateOf(employerAddress ?: "") }
+    var employerPLZInput by remember(employerPLZ) { mutableStateOf(employerPLZ ?: "") }
+    var employerCityInput by remember(employerCity) { mutableStateOf(employerCity ?: "") }
     
-    var versionTapCount by remember { mutableIntStateOf(0) }
-    var showConfetti by remember { mutableStateOf(false) }
+    var showColorDialog by remember { mutableStateOf(false) }
+    var showReminderDialog by remember { mutableStateOf(false) }
+    var showVisibilityDialog by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            val inputStream = context.contentResolver.openInputStream(it)
+            val file = File(context.filesDir, "profile_picture.jpg")
+            val outputStream = FileOutputStream(file)
+            inputStream?.use { input ->
+                outputStream.use { output ->
+                    input.copyTo(output)
+                }
+            }
+            viewModel.setProfilePictureUri(file.absolutePath)
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.setImportBirthdays(true)
+        }
+    }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -69,12 +130,19 @@ fun SettingsScreen(
         }
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val isBusiness = userStatus == ThemePreferences.STATUS_BUSINESS
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = backgroundColor,
         topBar = {
             AppTopBar(
                 areaName = "Einstellungen",
                 userStatus = userStatus,
-                navController = navController
+                navController = navController,
+                scrollBehavior = scrollBehavior
             )
         }
     ) { padding ->
@@ -84,306 +152,507 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            ListItem(
-                headlineContent = { Text("Dein Name") },
-                supportingContent = { Text(userName ?: "Nicht festgelegt") },
-                leadingContent = { Icon(Icons.Default.Person, contentDescription = null) },
-                modifier = Modifier.clickable { showNameDialog = true }
-            )
-
-            if (userStatus == ThemePreferences.STATUS_BUSINESS) {
-                ListItem(
-                    headlineContent = { Text("Arbeitgeber") },
-                    supportingContent = { Text(employer ?: "Nicht festgelegt") },
-                    leadingContent = { Icon(Icons.Default.Business, contentDescription = null) },
-                    modifier = Modifier.clickable { showEmployerDialog = true }
-                )
-            }
-
-            HorizontalDivider()
-
-            Text(
-                text = "Hilfe & Papierkorb",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            ListItem(
-                headlineContent = { Text("Funktionsübersicht") },
-                supportingContent = { Text("Alle Features im Überblick") },
-                leadingContent = { Icon(Icons.Default.List, contentDescription = null) },
-                trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
-                modifier = Modifier.clickable { navController.navigate(Screen.Features.route) }
-            )
-
-            ListItem(
-                headlineContent = { Text("Papierkorb") },
-                supportingContent = { Text("Gelöschte Termine & Einstellungen") },
-                leadingContent = { Icon(Icons.Default.Delete, contentDescription = null) },
-                trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
-                modifier = Modifier.clickable { navController.navigate(Screen.Trash.route) }
-            )
-
-            if (userStatus == ThemePreferences.STATUS_PRO) {
-                ListItem(
-                    headlineContent = { Text("App weiterempfehlen") },
-                    supportingContent = { Text("Teile die App mit deinen Freunden") },
-                    leadingContent = { Icon(Icons.Default.Share, contentDescription = null) },
-                    modifier = Modifier.clickable {
-                        val sendIntent: Intent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, "Schau dir diese tolle Terminplaner App an!")
-                            type = "text/plain"
-                        }
-                        val shareIntent = Intent.createChooser(sendIntent, null)
-                        context.startActivity(shareIntent)
-                    }
-                )
-            }
-
-            HorizontalDivider()
-
-            Text(
-                text = "Daten",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            ListItem(
-                headlineContent = { Text("Kategorien verwalten") },
-                supportingContent = { Text("Kategorien erstellen und bearbeiten") },
-                leadingContent = { Icon(Icons.Default.Palette, contentDescription = null) },
-                trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
-                modifier = Modifier.clickable { navController.navigate(Screen.CategoriesList.route) }
-            )
-
-            ListItem(
-                headlineContent = { 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Daten exportieren")
-                        Spacer(Modifier.width(8.dp))
-                        var showStorageTip by remember { mutableStateOf(false) }
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Hinweis",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clickable { showStorageTip = true }
-                        )
-                        if (showStorageTip) {
-                            AlertDialog(
-                                onDismissRequest = { showStorageTip = false },
-                                title = { Text("Sicherheitshinweis") },
-                                text = { Text("Denken Sie daran Ihre Daten regelmäßig zu sichern!") },
-                                confirmButton = {
-                                    TextButton(onClick = { showStorageTip = false }) { Text("OK") }
-                                }
-                            )
-                        }
-                    }
-                },
-                supportingContent = { Text("Termine und Kategorien speichern") },
-                leadingContent = { Icon(Icons.Default.Upload, contentDescription = null) },
-                modifier = Modifier.clickable { viewModel.exportData(context) }
-            )
-
-            ListItem(
-                headlineContent = { Text("Daten importieren") },
-                supportingContent = { Text("Daten aus JSON laden") },
-                leadingContent = { Icon(Icons.Default.Download, contentDescription = null) },
-                modifier = Modifier.clickable { importLauncher.launch("application/json") }
-            )
-
-            HorizontalDivider()
-
-            Text(
-                text = "Integrationen",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            ListItem(
-                headlineContent = { Text("Smartwatch Verknüpfung") },
-                supportingContent = { Text("Termine automatisch auf die Uhr übertragen") },
-                leadingContent = { Icon(Icons.Default.Watch, contentDescription = null) },
-                trailingContent = {
-                    Switch(
-                        checked = smartwatchSync,
-                        onCheckedChange = { viewModel.setSmartwatchSync(it) }
-                    )
-                }
-            )
-
-            HorizontalDivider()
-
-            Text(
-                text = "Support & Design",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            ListItem(
-                headlineContent = { Text("Dunkles Design") },
-                supportingContent = { 
-                    Text(
-                        when(darkThemeMode) {
-                            ThemePreferences.MODE_LIGHT -> "Hell"
-                            ThemePreferences.MODE_DARK -> "Dunkel"
-                            else -> "System-Standard"
-                        }
-                    )
-                },
-                leadingContent = { Icon(Icons.Default.DarkMode, contentDescription = null) },
-                trailingContent = {
-                    var expanded by remember { mutableStateOf(false) }
-                    Box {
-                        TextButton(onClick = { expanded = true }) {
-                            Text("Wählen")
-                        }
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            DropdownMenuItem(
-                                text = { Text("System-Standard") },
-                                onClick = { 
-                                    viewModel.setDarkMode(ThemePreferences.MODE_SYSTEM)
-                                    expanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Hell") },
-                                onClick = { 
-                                    viewModel.setDarkMode(ThemePreferences.MODE_LIGHT)
-                                    expanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Dunkel") },
-                                onClick = { 
-                                    viewModel.setDarkMode(ThemePreferences.MODE_DARK)
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            )
-
-            if (userStatus != ThemePreferences.STATUS_BUSINESS && !dndManager.hasPermission()) {
-                ListItem(
-                    headlineContent = { Text("Fokus-Modus Berechtigung") },
-                    supportingContent = { Text("Erforderlich für automatischen 'Bitte nicht stören' Modus") },
-                    leadingContent = { Icon(Icons.Default.PriorityHigh, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                    modifier = Modifier.clickable { dndManager.requestPermission() }
-                )
-            }
-
-            // Note: Dynamic Colors toggle is kept in background but not shown in UI as requested
-            
-            if (!dynamicColor) {
-                Text(
-                    text = "Designfarbe",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    val colors = listOf(Red, Yellow, Green, Blue, Pink)
-                    colors.forEach { color ->
-                        val colorLong = color.toArgb().toLong()
-                        val isSelected = themeColor == colorLong
+            // --- SECTION 1: PROFIL ---
+            SettingsSection(title = "Benutzerprofil") {
+                SettingsGroup {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showNameDialog = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Surface(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clickable { viewModel.setThemeColor(colorLong) },
+                                .size(60.dp)
+                                .clickable { photoPickerLauncher.launch("image/*") },
                             shape = CircleShape,
-                            color = color,
-                            border = if (isSelected) {
-                                androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.onSurface)
-                            } else null
+                            color = MaterialTheme.colorScheme.primaryContainer
                         ) {
-                            if (isSelected) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.padding(10.dp)
-                                )
+                            Box(contentAlignment = Alignment.Center) {
+                                val bitmap = remember(profilePictureUri) {
+                                    profilePictureUri?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() }
+                                }
+                                if (bitmap != null) {
+                                    Image(
+                                        bitmap = bitmap,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Text(
+                                        text = (userName?.take(1) ?: "U").uppercase(),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .padding(2.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.CameraAlt, null, tint = Color.White, modifier = Modifier.size(12.dp))
+                                }
                             }
                         }
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = userName ?: "Benutzername festlegen",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = if (isBusiness) "Business Account" else "Persönlicher Account",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                    }
+                    
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp), thickness = 0.5.dp)
+
+                    // Personal Account Details (Address & Birthday)
+                    if (!isBusiness) {
+                        SettingsItem(
+                            icon = Icons.Default.ContactPage,
+                            iconContainerColor = MaterialTheme.colorScheme.secondary,
+                            label = "Persönliche Daten",
+                            subtext = if (personalAddress.isNullOrBlank() || personalBirthday == null || personalBirthday == 0L) "Bitte vervollständigen" else null,
+                            value = "Bearbeiten",
+                            onClick = { showPersonalDataDialog = true }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    }
+
+                    if (isBusiness) {
+                        SettingsItem(
+                            icon = Icons.Default.Business,
+                            iconContainerColor = MaterialTheme.colorScheme.secondary,
+                            label = "Arbeitgeber",
+                            subtext = if (employerName.isNullOrBlank()) "Pflichtangabe erforderlich" else null,
+                            value = employerName ?: "Nicht festgelegt",
+                            onClick = { showEmployerDialog = true }
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // --- SECTION 2: KALENDER-OPTIK ---
+            SettingsSection(title = "Kalender-Optik") {
+                SettingsGroup {
+                    val currentThemeColor = viewModel.themeColor.collectAsState().value
+                    SettingsItem(
+                        icon = Icons.Rounded.Palette,
+                        iconContainerColor = MaterialTheme.colorScheme.secondary,
+                        label = "Standardfarbe",
+                        value = when(currentThemeColor) {
+                            0xFFBA1A1A -> "Rot"
+                            0xFF34C759 -> "Grün"
+                            0xFFAF52DE -> "Lila"
+                            0xFF007AFF -> "Blau"
+                            else -> "Benutzerdefiniert"
+                        },
+                        valueColor = Color(currentThemeColor),
+                        onClick = { showColorDialog = true }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    SettingsSwitchItem(
+                        icon = Icons.Default.CalendarViewWeek,
+                        iconContainerColor = MaterialTheme.colorScheme.primary,
+                        label = "Wochenende anzeigen",
+                        checked = showWeekend,
+                        onCheckedChange = { viewModel.setShowWeekend(it) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    SettingsSwitchItem(
+                        icon = Icons.Default.Event,
+                        iconContainerColor = MaterialTheme.colorScheme.tertiary,
+                        label = "Feiertage",
+                        checked = showHolidays,
+                        onCheckedChange = { viewModel.setShowHolidays(it) }
+                    )
+                }
+            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            // --- SECTION 3: INTELLIGENTE HELFER ---
+            SettingsSection(title = "Intelligente Helfer") {
+                SettingsGroup {
+                    if (isBusiness) {
+                        SettingsSwitchItem(
+                            icon = Icons.Default.DirectionsCar,
+                            iconContainerColor = MaterialTheme.colorScheme.primary,
+                            label = "Fahrtzeit einkalkulieren",
+                            subtext = "Nutzt deinen Standort für Verkehrshinweise",
+                            checked = travelTime,
+                            onCheckedChange = { viewModel.setTravelTime(it) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    }
+                    SettingsItem(
+                        icon = Icons.Default.Notifications,
+                        iconContainerColor = MaterialTheme.colorScheme.error,
+                        label = "Standard-Erinnerung",
+                        value = "$defaultReminder Min. vorher",
+                        onClick = { showReminderDialog = true }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    SettingsSwitchItem(
+                        icon = Icons.Default.Cake,
+                        iconContainerColor = MaterialTheme.colorScheme.secondary,
+                        label = "Geburtstage",
+                        subtext = "Importiert Daten aus Kontakten",
+                        checked = importBirthdays,
+                        onCheckedChange = { 
+                            if (it) {
+                                when (PermissionChecker.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)) {
+                                    PermissionChecker.PERMISSION_GRANTED -> viewModel.setImportBirthdays(true)
+                                    else -> permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                                }
+                            } else {
+                                viewModel.setImportBirthdays(false)
+                            }
+                        }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    SettingsSwitchItem(
+                        icon = Icons.Default.MarkEmailRead,
+                        iconContainerColor = MaterialTheme.colorScheme.primary,
+                        label = "Einladungen",
+                        subtext = "Andere dürfen Terminvorschläge schicken",
+                        checked = allowInvitations,
+                        onCheckedChange = { viewModel.setAllowInvitations(it) }
+                    )
+                }
+            }
+
+            // --- SECTION 4: GESCHÄFTLICH (Only if Business) ---
+            if (isBusiness) {
+                SettingsSection(title = "Verfügbarkeit & Buchung") {
+                    SettingsGroup {
+                        SettingsItem(
+                            icon = Icons.Default.Schedule,
+                            iconContainerColor = MaterialTheme.colorScheme.primary,
+                            label = "Arbeitszeiten",
+                            subtext = "Lege fest, wann Termine gebucht werden können",
+                            showChevron = true,
+                            onClick = { /* Navigate */ }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                        SettingsItem(
+                            icon = Icons.Default.Timer,
+                            iconContainerColor = MaterialTheme.colorScheme.secondary,
+                            label = "Pufferzeiten",
+                            value = "10 Min.",
+                            showChevron = true,
+                            onClick = { /* Navigate */ }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                        SettingsItem(
+                            icon = Icons.Default.Update,
+                            iconContainerColor = MaterialTheme.colorScheme.tertiary,
+                            label = "Buchungsvorlauf",
+                            value = "Min. 24 Std.",
+                            showChevron = true,
+                            onClick = { /* Navigate */ }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                        SettingsSwitchItem(
+                            icon = Icons.Default.Repeat,
+                            iconContainerColor = MaterialTheme.colorScheme.primary,
+                            label = "Serientermine",
+                            checked = bizRecurring,
+                            onCheckedChange = { viewModel.setBizRecurring(it) }
+                        )
+                    }
+                }
+
+                SettingsSection(title = "Kundenkommunikation") {
+                    SettingsGroup {
+                        SettingsSwitchItem(
+                            icon = Icons.Default.CheckCircle,
+                            iconContainerColor = MaterialTheme.colorScheme.primary,
+                            label = "Bestätigungen",
+                            subtext = "Automatische E-Mails an Kunden senden",
+                            checked = bizConfirmations,
+                            onCheckedChange = { viewModel.setBizConfirmations(it) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                        SettingsItem(
+                            icon = Icons.Default.NotificationsActive,
+                            iconContainerColor = MaterialTheme.colorScheme.error,
+                            label = "Erinnerungen für Kunden",
+                            value = "2 Std. vorher",
+                            onClick = { /* Navigate */ }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                        SettingsItem(
+                            icon = Icons.Default.Gavel,
+                            iconContainerColor = MaterialTheme.colorScheme.outline,
+                            label = "Stornierungsbedingungen",
+                            onClick = { /* Navigate */ }
+                        )
+                    }
+                }
+
+                SettingsSection(title = "Team & Ressourcen") {
+                    SettingsGroup {
+                        SettingsItem(
+                            icon = Icons.Default.Groups,
+                            iconContainerColor = MaterialTheme.colorScheme.secondary,
+                            label = "Mitarbeiter verwalten",
+                            showChevron = true,
+                            onClick = { /* Navigate */ }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                        SettingsItem(
+                            icon = Icons.Default.MeetingRoom,
+                            iconContainerColor = MaterialTheme.colorScheme.tertiary,
+                            label = "Räume & Equipment",
+                            subtext = "Weise Terminen Ressourcen zu",
+                            onClick = { /* Navigate */ }
+                        )
+                    }
+                }
+            }
+
+            // --- SECTION 7: FAMILIE & FREUNDE ---
+            SettingsSection(title = "Familie & Freunde") {
+                SettingsGroup {
+                    SettingsItem(
+                        icon = Icons.Default.People,
+                        iconContainerColor = MaterialTheme.colorScheme.secondary,
+                        label = "Freigabe",
+                        value = if (calendarVisibility == ThemePreferences.VISIBILITY_PRIVATE) "Persönlich (Niemand)" else "Familie (Familiengruppe)",
+                        onClick = { showVisibilityDialog = true }
+                    )
+                }
+            }
+
+            // --- SECTION 8: DATEN & SICHERHEIT ---
+            SettingsSection(title = "Daten & Sicherheit") {
+                SettingsGroup {
+                    SettingsItem(
+                        icon = Icons.Default.Delete,
+                        iconContainerColor = MaterialTheme.colorScheme.error,
+                        label = "Papierkorb",
+                        showChevron = true,
+                        onClick = { navController.navigate(Screen.Trash.route) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    SettingsItem(
+                        icon = Icons.Default.Upload,
+                        iconContainerColor = MaterialTheme.colorScheme.primary,
+                        label = "Daten exportieren",
+                        onClick = { viewModel.exportData(context) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                    SettingsItem(
+                        icon = Icons.Default.Download,
+                        iconContainerColor = MaterialTheme.colorScheme.secondary,
+                        label = "Daten importieren",
+                        onClick = { importLauncher.launch("application/json") }
+                    )
+                }
+                Text(
+                    text = "Denken Sie daran Ihre Daten zu sichern!",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Footer
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "Version 2026.04.26.20.55",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable {
-                        versionTapCount++
-                        when (versionTapCount) {
-                            3 -> {
-                                if (userStatus != ThemePreferences.STATUS_PRO) {
-                                    showConfetti = true
-                                    viewModel.setUserStatus(ThemePreferences.STATUS_PRO)
-                                }
-                            }
-                            5 -> {
-                                if (userStatus != ThemePreferences.STATUS_BUSINESS) {
-                                    showConfetti = true
-                                    viewModel.setUserStatus(ThemePreferences.STATUS_BUSINESS)
-                                }
-                                versionTapCount = 0
-                            }
-                        }
-                    }
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = "Contact",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable {
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:kontakt@kaneplarium.com")
-                            putExtra(Intent.EXTRA_SUBJECT, "Terminplaner Feedback")
-                        }
-                        context.startActivity(Intent.createChooser(intent, "Email senden"))
+                TextButton(onClick = {
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:kontakt@kaneplarium.com")
+                        putExtra(Intent.EXTRA_SUBJECT, "Terminplaner Support")
                     }
-                )
+                    context.startActivity(Intent.createChooser(intent, "Email senden"))
+                }) {
+                    Text("Contact Support", style = MaterialTheme.typography.labelSmall)
+                }
             }
+            
+            Spacer(modifier = Modifier.height(48.dp))
         }
+    }
 
-        if (uiState.exportSuccess) {
-            Snackbar(modifier = Modifier.padding(16.dp)) { Text("Export erfolgreich") }
+    // Dialogs
+    if (showPersonalDataDialog) {
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        var tempAddress by remember { mutableStateOf(personalAddress ?: "") }
+        var tempBirthday by remember { mutableStateOf(personalBirthday ?: 0L) }
+        var showDatePicker by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showPersonalDataDialog = false },
+            title = { Text("Persönliche Daten") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = tempAddress,
+                        onValueChange = { tempAddress = it },
+                        label = { Text("Adresse") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Cake, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("Geburtsdatum", style = MaterialTheme.typography.labelSmall)
+                            Text(if (tempBirthday > 0) dateFormat.format(Date(tempBirthday)) else "Nicht festgelegt")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setPersonalData(tempAddress, tempBirthday)
+                    showPersonalDataDialog = false
+                }) {
+                    Text("Speichern")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPersonalDataDialog = false }) {
+                    Text("Abbrechen")
+                }
+            }
+        )
+
+        if (showDatePicker) {
+            val datePickerState = rememberDatePickerState(initialSelectedDateMillis = if (tempBirthday > 0) tempBirthday else System.currentTimeMillis())
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        tempBirthday = datePickerState.selectedDateMillis ?: tempBirthday
+                        showDatePicker = false
+                    }) { Text("OK") }
+                },
+                dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Abbrechen") } }
+            ) { DatePicker(state = datePickerState) }
         }
-        if (uiState.importSuccess) {
-            Snackbar(modifier = Modifier.padding(16.dp)) { Text("Import erfolgreich") }
-        }
-        if (uiState.error != null) {
-            Snackbar(
-                modifier = Modifier.padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.error
-            ) { Text(uiState.error!!) }
-        }
+    }
+
+    if (showVisibilityDialog) {
+        AlertDialog(
+            onDismissRequest = { showVisibilityDialog = false },
+            title = { Text("Kalender-Sichtbarkeit") },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { viewModel.setCalendarVisibility(ThemePreferences.VISIBILITY_PRIVATE); showVisibilityDialog = false }.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = calendarVisibility == ThemePreferences.VISIBILITY_PRIVATE, onClick = null)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("Persönlich", fontWeight = FontWeight.Bold)
+                            Text("Nur du kannst deine Termine sehen.", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { viewModel.setCalendarVisibility(ThemePreferences.VISIBILITY_FAMILY); showVisibilityDialog = false }.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = calendarVisibility == ThemePreferences.VISIBILITY_FAMILY, onClick = null)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("Familie", fontWeight = FontWeight.Bold)
+                            Text("Für Mitglieder deiner Familiengruppe sichtbar.", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showVisibilityDialog = false }) { Text("Abbrechen") } }
+        )
+    }
+
+    if (showColorDialog) {
+        AlertDialog(
+            onDismissRequest = { showColorDialog = false },
+            title = { Text("Standardfarbe wählen") },
+            text = {
+                Column {
+                    listOf(
+                        "Rot" to 0xFFBA1A1A,
+                        "Grün" to 0xFF34C759,
+                        "Lila" to 0xFFAF52DE,
+                        "Blau" to 0xFF007AFF
+                    ).forEach { (name, color) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.setThemeColor(color); showColorDialog = false }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(color)))
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = name,
+                                color = Color(color),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showColorDialog = false }) { Text("Abbrechen") } }
+        )
+    }
+
+    if (showReminderDialog) {
+        AlertDialog(
+            onDismissRequest = { showReminderDialog = false },
+            title = { Text("Standard-Erinnerung") },
+            text = {
+                Column {
+                    listOf(15, 30, 60).forEach { mins ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.setDefaultReminder(mins); showReminderDialog = false }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = defaultReminder == mins, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text("$mins Minuten vorher")
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showReminderDialog = false }) { Text("Abbrechen") } }
+        )
     }
 
     if (showNameDialog) {
@@ -419,18 +688,55 @@ fun SettingsScreen(
             onDismissRequest = { showEmployerDialog = false },
             title = { Text("Arbeitgeber festlegen") },
             text = {
-                OutlinedTextField(
-                    value = employerInput,
-                    onValueChange = { employerInput = it },
-                    label = { Text("Name des Unternehmens") },
-                    singleLine = true
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = employerNameInput,
+                        onValueChange = { employerNameInput = it },
+                        label = { Text("Name des Unternehmens") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = employerAddressInput,
+                        onValueChange = { employerAddressInput = it },
+                        label = { Text("Adresse") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = employerPLZInput,
+                            onValueChange = { employerPLZInput = it },
+                            label = { Text("PLZ") },
+                            singleLine = true,
+                            modifier = Modifier.weight(0.4f)
+                        )
+                        OutlinedTextField(
+                            value = employerCityInput,
+                            onValueChange = { employerCityInput = it },
+                            label = { Text("Stadt") },
+                            singleLine = true,
+                            modifier = Modifier.weight(0.6f)
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.setEmployer(employerInput)
-                    showEmployerDialog = false
-                }) {
+                TextButton(
+                    onClick = {
+                        viewModel.setEmployerData(
+                            employerNameInput, 
+                            employerAddressInput, 
+                            employerPLZInput, 
+                            employerCityInput
+                        )
+                        showEmployerDialog = false
+                    },
+                    enabled = employerNameInput.isNotBlank() && 
+                             employerAddressInput.isNotBlank() && 
+                             employerPLZInput.isNotBlank() && 
+                             employerCityInput.isNotBlank()
+                ) {
                     Text("Speichern")
                 }
             },
@@ -441,8 +747,203 @@ fun SettingsScreen(
             }
         )
     }
+}
 
-    if (showConfetti) {
-        ConfettiOverlay(onFinished = { showConfetti = false })
+@Composable
+fun SettingsSection(
+    title: String,
+    isLocked: Boolean = false,
+    onLockedClick: (() -> Unit)? = null,
+    actionIcon: ImageVector? = null,
+    onActionClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = Modifier.padding(top = 24.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp, vertical = 8.dp)
+                .then(if (isLocked) Modifier.clickable { onLockedClick?.invoke() } else Modifier),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isLocked) Color.Gray else MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.weight(1f)
+            )
+            if (isLocked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Gesperrt",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+            if (actionIcon != null && onActionClick != null) {
+                IconButton(onClick = onActionClick, modifier = Modifier.size(20.dp)) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+        content()
+    }
+}
+
+@Composable
+fun SettingsGroup(
+    enabled: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .then(if (!enabled) Modifier.alpha(0.6f) else Modifier),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        tonalElevation = 0.dp
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+fun SettingsItem(
+    icon: ImageVector,
+    iconContainerColor: Color,
+    label: String,
+    subtext: String? = null,
+    value: String? = null,
+    valueColor: Color = Color.Gray,
+    showChevron: Boolean = false,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable(enabled = enabled) { onClick() },
+        color = Color.Transparent
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(iconContainerColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (enabled) MaterialTheme.colorScheme.onSurface else Color.Gray
+                )
+                if (subtext != null) {
+                    Text(
+                        text = subtext,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (subtext.contains("Pflichtangabe") || subtext.contains("vervollständigen")) MaterialTheme.colorScheme.error else Color.Gray
+                    )
+                }
+            }
+            
+            if (value != null) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = valueColor,
+                    fontWeight = if (valueColor != Color.Gray) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+            
+            if (showChevron) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsSwitchItem(
+    icon: ImageVector,
+    iconContainerColor: Color,
+    label: String,
+    subtext: String? = null,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Surface(color = Color.Transparent) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(iconContainerColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (enabled) MaterialTheme.colorScheme.onSurface else Color.Gray
+                )
+                if (subtext != null) {
+                    Text(
+                        text = subtext,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+            
+            Switch(
+                checked = checked,
+                enabled = enabled,
+                onCheckedChange = onCheckedChange
+            )
+        }
     }
 }

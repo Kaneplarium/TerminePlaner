@@ -17,8 +17,7 @@ import com.terminplaner.ui.tasks.*
 import com.terminplaner.ui.trash.TrashScreen
 
 val bottomNavItems = listOf(
-    BottomNavItem.Calendar,
-    BottomNavItem.Appointments,
+    BottomNavItem.Today,
     BottomNavItem.Tasks,
     BottomNavItem.Settings,
 )
@@ -48,7 +47,7 @@ fun AppNavigation(
 
     Scaffold(
         bottomBar = {
-            val showBottomBar = currentDestination?.route in listOf("calendar", "appointments_list", "tasks_list", "settings")
+            val showBottomBar = currentDestination?.route in listOf("calendar", "tasks_list", "settings")
             if (showBottomBar) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->

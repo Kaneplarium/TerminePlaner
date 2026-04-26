@@ -1,15 +1,20 @@
 package com.terminplaner.ui.appointments
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.terminplaner.ui.components.AppTopBar
@@ -27,19 +32,33 @@ fun AppointmentsListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.GERMAN)
     
-    var appointmentToDelete by remember { mutableStateOf<Long?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Anstehend", "Erledigt")
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val isDark = isSystemInDarkTheme()
+    val backgroundColor = if (isDark) Color.Black else Color(0xFFF2F2F7)
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = backgroundColor,
         topBar = {
             Column {
                 AppTopBar(
                     areaName = "Termine",
                     userStatus = uiState.userStatus,
-                    navController = navController
+                    navController = navController,
+                    scrollBehavior = scrollBehavior
                 )
-                TabRow(selectedTabIndex = selectedTab) {
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = if (scrollBehavior.state.collapsedFraction > 0.5f) {
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                    } else {
+                        backgroundColor
+                    },
+                    divider = {}
+                ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTab == index,
@@ -55,7 +74,10 @@ fun AppointmentsListScreen(
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(Screen.AppointmentEdit.createRoute())
-                    }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Neuer Termin")
                 }
@@ -99,59 +121,53 @@ fun AppointmentsListScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(padding)
             ) {
                 groupedAppointments.forEach { (monthKey, appointments) ->
                     item {
                         Text(
-                            text = dateFormat.format(Date(monthKey)),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            text = dateFormat.format(Date(monthKey)).uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 28.dp, top = 24.dp, bottom = 8.dp),
+                            letterSpacing = 0.5.sp
                         )
                     }
-                    items(appointments, key = { it.id }) { appointment ->
-                        val category = uiState.categories.find { it.id == appointment.categoryId }
-                        AppointmentCard(
-                            appointment = appointment,
-                            categoryColor = category?.let { androidx.compose.ui.graphics.Color(it.color) },
-                            onEdit = {
-                                navController.navigate(
-                                    Screen.AppointmentEdit.createRoute(appointmentId = appointment.id)
-                                )
-                            },
-                            onDelete = {
-                                appointmentToDelete = appointment.id
+                    
+                    item {
+                        Surface(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 1.dp
+                        ) {
+                            Column {
+                                appointments.forEachIndexed { index, appointment ->
+                                    val category = uiState.categories.find { it.id == appointment.categoryId }
+                                    AppointmentCard(
+                                        appointment = appointment,
+                                        categoryColor = category?.let { Color(it.color) },
+                                        onEdit = {
+                                            navController.navigate(
+                                                Screen.AppointmentEdit.createRoute(appointmentId = appointment.id)
+                                            )
+                                        }
+                                    )
+                                    if (index < appointments.size - 1) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 66.dp),
+                                            thickness = 0.5.dp
+                                        )
+                                    }
+                                }
                             }
-                        )
+                        }
                     }
                 }
+                item { Spacer(modifier = Modifier.height(32.dp)) }
             }
         }
-    }
-
-    if (appointmentToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { appointmentToDelete = null },
-            title = { Text("Termin löschen") },
-            text = { Text("Möchtest du diesen Termin wirklich löschen?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        appointmentToDelete?.let { viewModel.deleteAppointment(it) }
-                        appointmentToDelete = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Löschen")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { appointmentToDelete = null }) {
-                    Text("Abbrechen")
-                }
-            }
-        )
     }
 }

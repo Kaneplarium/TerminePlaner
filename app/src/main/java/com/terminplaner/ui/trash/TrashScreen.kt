@@ -1,5 +1,6 @@
 package com.terminplaner.ui.trash
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -38,12 +41,19 @@ fun TrashScreen(
     var showEmptyTrashDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val isDark = isSystemInDarkTheme()
+    val backgroundColor = if (isDark) Color.Black else Color(0xFFF2F2F7)
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = backgroundColor,
         topBar = {
             AppTopBar(
                 areaName = "Papierkorb",
                 userStatus = userStatus,
                 navController = navController,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
@@ -70,7 +80,8 @@ fun TrashScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Keine gelöschten Termine",
@@ -83,18 +94,20 @@ fun TrashScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.deletedAppointments, key = { it.id }) { appointment ->
                     Card(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -111,7 +124,8 @@ fun TrashScreen(
                                 IconButton(onClick = { viewModel.restoreAppointment(appointment.id) }) {
                                     Icon(
                                         Icons.Default.Restore,
-                                        contentDescription = "Wiederherstellen"
+                                        contentDescription = "Wiederherstellen",
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                                 IconButton(onClick = { viewModel.permanentlyDelete(appointment.id) }) {

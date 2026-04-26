@@ -31,6 +31,7 @@ data class AppointmentEditUiState(
     val categoryId: Long? = null,
     val color: Int? = null,
     val isFocusMode: Boolean = false,
+    val isBusiness: Boolean = false,
     val categories: List<Category> = emptyList(),
     val userName: String? = null,
     val userStatus: Int = ThemePreferences.STATUS_NONE,
@@ -77,7 +78,8 @@ class AppointmentEditViewModel @Inject constructor(
         viewModelScope.launch {
             themePreferences.userStatus.collect { status ->
                 val focus = if (status == ThemePreferences.STATUS_BUSINESS) true else _uiState.value.isFocusMode
-                _uiState.update { it.copy(userStatus = status, isFocusMode = focus) }
+                val isBiz = status == ThemePreferences.STATUS_BUSINESS
+                _uiState.update { it.copy(userStatus = status, isFocusMode = focus, isBusiness = isBiz) }
             }
         }
 
@@ -263,7 +265,8 @@ class AppointmentEditViewModel @Inject constructor(
                 endDateTime = state.endDateTime,
                 categoryId = state.categoryId,
                 color = state.color,
-                isFocusMode = state.isFocusMode
+                isFocusMode = state.isFocusMode,
+                isBusiness = state.isBusiness
             )
 
             if (state.isEditMode) {

@@ -21,6 +21,8 @@ data class TaskEditUiState(
     val title: String = "",
     val description: String = "",
     val isCompleted: Boolean = false,
+    val isImportant: Boolean = false,
+    val isBusiness: Boolean = false,
     val appointmentId: Long? = null,
     val reminderTime: Long? = null,
     val appointments: List<Appointment> = emptyList(),
@@ -85,6 +87,8 @@ class TaskEditViewModel @Inject constructor(
                         title = task.title,
                         description = task.description ?: "",
                         isCompleted = task.isCompleted,
+                        isImportant = task.isImportant,
+                        isBusiness = task.isBusiness,
                         appointmentId = task.appointmentId,
                         reminderTime = task.reminderTime,
                         isEditMode = true
@@ -92,10 +96,6 @@ class TaskEditViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    fun setInitialAppointment(appointmentId: Long?) {
-        _uiState.update { it.copy(appointmentId = appointmentId) }
     }
 
     fun updateReminderTime(time: Long?) {
@@ -128,6 +128,14 @@ class TaskEditViewModel @Inject constructor(
         _uiState.update { it.copy(appointmentId = appointmentId) }
     }
 
+    fun updateBusiness(isBusiness: Boolean) {
+        _uiState.update { it.copy(isBusiness = isBusiness) }
+    }
+
+    fun updateImportant(isImportant: Boolean) {
+        _uiState.update { it.copy(isImportant = isImportant) }
+    }
+
     fun save() {
         val state = _uiState.value
         if (state.title.isBlank()) {
@@ -141,6 +149,8 @@ class TaskEditViewModel @Inject constructor(
                 title = state.title,
                 description = state.description.ifBlank { null },
                 isCompleted = state.isCompleted,
+                isImportant = state.isImportant,
+                isBusiness = state.isBusiness,
                 appointmentId = state.appointmentId,
                 reminderTime = state.reminderTime
             )

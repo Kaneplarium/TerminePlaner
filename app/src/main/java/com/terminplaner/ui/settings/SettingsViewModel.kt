@@ -27,7 +27,7 @@ data class SettingsUiState(
     val exportSuccess: Boolean = false,
     val importSuccess: Boolean = false,
     val error: String? = null,
-    val selectedThemeColor: Long = 0xFFE53935,
+    val selectedThemeColor: Long = 0xFF007AFF,
     val dynamicColor: Boolean = true,
     val userName: String? = null,
 )
@@ -45,7 +45,7 @@ class SettingsViewModel @Inject constructor(
     val themeColor = themePreferences.themeColor.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0xFFE53935
+        initialValue = 0xFF007AFF
     )
 
     val darkThemeMode = themePreferences.darkThemeMode.stateIn(
@@ -66,11 +66,19 @@ class SettingsViewModel @Inject constructor(
         initialValue = null
     )
 
-    val employer = themePreferences.employer.stateIn(
+    val profilePictureUri = themePreferences.profilePictureUri.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
     )
+
+    val personalAddress = themePreferences.personalAddress.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val personalBirthday = themePreferences.personalBirthday.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val employerName = themePreferences.employerName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val employerAddress = themePreferences.employerAddress.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val employerPLZ = themePreferences.employerPLZ.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val employerCity = themePreferences.employerCity.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val trashAutoDeleteDays = themePreferences.trashAutoDeleteDays.stateIn(
         scope = viewModelScope,
@@ -96,57 +104,82 @@ class SettingsViewModel @Inject constructor(
         initialValue = ThemePreferences.STATUS_NONE
     )
 
+    val focusFilter = themePreferences.focusFilter.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ThemePreferences.FILTER_ALL
+    )
+
+    val calendarVisibility = themePreferences.calendarVisibility.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ThemePreferences.VISIBILITY_PRIVATE
+    )
+
     val smartwatchSync = themePreferences.smartwatchSync.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = false
     )
+    
+    // Personal Flows
+    val showWeekend = themePreferences.showWeekend.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val showHolidays = themePreferences.showHolidays.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val travelTime = themePreferences.travelTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val defaultReminder = themePreferences.defaultReminder.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 15)
+    val importBirthdays = themePreferences.importBirthdays.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val allowInvitations = themePreferences.allowInvitations.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    fun setThemeColor(color: Long) {
-        viewModelScope.launch {
-            themePreferences.setThemeColor(color)
-        }
+    // Business Flows
+    val bizRecurring = themePreferences.bizRecurring.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val bizConfirmations = themePreferences.bizConfirmations.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    fun setThemeColor(color: Long) = viewModelScope.launch { themePreferences.setThemeColor(color) }
+    fun setDarkMode(mode: Int) = viewModelScope.launch { themePreferences.setDarkMode(mode) }
+    fun setUserName(name: String?) = viewModelScope.launch { themePreferences.setUserName(name) }
+    fun setProfilePictureUri(uri: String?) = viewModelScope.launch { themePreferences.setProfilePictureUri(uri) }
+    
+    fun setPersonalData(address: String?, birthday: Long?) = viewModelScope.launch {
+        themePreferences.setPersonalData(address, birthday)
     }
 
-    fun setDarkMode(mode: Int) {
-        viewModelScope.launch {
-            themePreferences.setDarkMode(mode)
-        }
+    fun setEmployerData(name: String?, address: String?, plz: String?, city: String?) = viewModelScope.launch { 
+        themePreferences.setEmployerData(name, address, plz, city) 
     }
 
-    fun setUserName(name: String?) {
-        viewModelScope.launch {
-            themePreferences.setUserName(name)
-        }
-    }
+    fun setTrashAutoDeleteDays(days: Int) = viewModelScope.launch { themePreferences.setTrashAutoDeleteDays(days) }
+    fun setDeleteLinkedTasks(enabled: Boolean) = viewModelScope.launch { themePreferences.setDeleteLinkedTasks(enabled) }
+    fun setUserStatus(status: Int) = viewModelScope.launch { themePreferences.setUserStatus(status) }
+    fun setFocusFilter(filter: Int) = viewModelScope.launch { themePreferences.setFocusFilter(filter) }
+    fun setCalendarVisibility(visibility: Int) = viewModelScope.launch { themePreferences.setCalendarVisibility(visibility) }
+    fun setSmartwatchSync(enabled: Boolean) = viewModelScope.launch { themePreferences.setSmartwatchSync(enabled) }
+    
+    // Personal Setters
+    fun setShowWeekend(enabled: Boolean) = viewModelScope.launch { themePreferences.setShowWeekend(enabled) }
+    fun setShowHolidays(enabled: Boolean) = viewModelScope.launch { themePreferences.setShowHolidays(enabled) }
+    fun setTravelTime(enabled: Boolean) = viewModelScope.launch { themePreferences.setTravelTime(enabled) }
+    fun setDefaultReminder(minutes: Int) = viewModelScope.launch { themePreferences.setDefaultReminder(minutes) }
+    fun setImportBirthdays(enabled: Boolean) = viewModelScope.launch { themePreferences.setImportBirthdays(enabled) }
+    fun setAllowInvitations(enabled: Boolean) = viewModelScope.launch { themePreferences.setAllowInvitations(enabled) }
 
-    fun setEmployer(name: String?) {
-        viewModelScope.launch {
-            themePreferences.setEmployer(name)
-        }
-    }
+    // Business Setters
+    fun setBizRecurring(enabled: Boolean) = viewModelScope.launch { themePreferences.setBizRecurring(enabled) }
+    fun setBizConfirmations(enabled: Boolean) = viewModelScope.launch { themePreferences.setBizConfirmations(enabled) }
 
-    fun setTrashAutoDeleteDays(days: Int) {
+    fun updateCategoryColor(categoryId: Long, color: Int) {
         viewModelScope.launch {
-            themePreferences.setTrashAutoDeleteDays(days)
-        }
-    }
-
-    fun setDeleteLinkedTasks(enabled: Boolean) {
-        viewModelScope.launch {
-            themePreferences.setDeleteLinkedTasks(enabled)
-        }
-    }
-
-    fun setUserStatus(status: Int) {
-        viewModelScope.launch {
-            themePreferences.setUserStatus(status)
-        }
-    }
-
-    fun setSmartwatchSync(enabled: Boolean) {
-        viewModelScope.launch {
-            themePreferences.setSmartwatchSync(enabled)
+            categoryRepository.getCategoryById(categoryId)?.let {
+                categoryRepository.updateCategory(it.copy(color = color))
+            }
         }
     }
 
